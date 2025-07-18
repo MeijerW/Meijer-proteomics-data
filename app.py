@@ -33,8 +33,8 @@ rna_filtered = rna[rna_samples]
 prot_filtered = prot[prot_samples]
 
 # Z-score per gene (row-wise)
-rna_z = rna_filtered.apply(zscore, axis=1, result_type='broadcast')
-prot_z = prot_filtered.apply(zscore, axis=1, result_type='broadcast')
+rna_z = rna_filtered.apply(zscore, axis=1)
+prot_z = prot_filtered.apply(zscore, axis=1)
 
 # Melt for plotting
 def melt_with_meta(df_z, meta_df, source_label):
