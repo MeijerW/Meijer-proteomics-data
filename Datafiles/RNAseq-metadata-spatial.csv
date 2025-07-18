@@ -1,0 +1,10 @@
+sample;group;replicate
+P-I;Posterior;1
+P-II;Posterior;2
+P-III;Posterior;3
+A-I;Anterior;1
+A-II;Anterior;2
+A-III;Anterior;3
+S-I;Somite;1
+S-II;Somite;2
+S-III;Somite;3
