@@ -12,7 +12,7 @@ st.title("🧬 Spatial RNA & Proteomics Expression Explorer")
 @st.cache_data
 def load_data():
 #load spatial data
-    BASE = "https://raw.githubusercontent.com/MeijerW/ProteomeUI/edit/main/Datafiles/"
+    BASE = "https://raw.githubusercontent.com/MeijerW/ProteomeUI/main/Datafiles/"
     rna = pd.read_csv(BASE + "RNAseq_Spatial_Normed_counts.csv", index_col=0)
     rna_meta = pd.read_csv(BASE + "RNAseq-metadata-spatial.csv")
     prot = pd.read_csv(BASE + "Proteomics_Spatial.csv", index_col=0)
