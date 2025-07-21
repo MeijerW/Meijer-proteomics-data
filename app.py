@@ -18,6 +18,8 @@ def load_data():
     return rna, prot
 
 rna_df, prot_df = load_data()
+rna_df['group'] = rna_df['group'].str.lower()
+prot_df['group'] = prot_df['group'].str.lower()
 
 st.title("Spatial Gene Expression Viewer")
 st.markdown("Compare spatial expression of a gene across RNA and Protein levels.")
