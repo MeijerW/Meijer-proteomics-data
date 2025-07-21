@@ -15,7 +15,7 @@ def load_data():
     BASE = "https://raw.githubusercontent.com/MeijerW/ProteomeUI/main/Datafiles/"
     rna = pd.read_csv(BASE + "RNAseq_Spatial_Normed_counts.csv", index_col=0)
     rna_meta = pd.read_csv(BASE + "RNAseq-metadata-spatial.csv", sep=';')
-    prot = pd.read_csv(BASE + "Proteomics_Spatial.csv", index_col=0)
+    prot = pd.read_csv(BASE + "Proteomics_Spatial_Short.csv", index_col=0)
     prot_meta = pd.read_csv(BASE + "Proteomics-metadata-spatial.csv", sep=';')
     return rna, rna_meta, prot, prot_meta
 
