@@ -97,7 +97,7 @@ with main_tab1:
     
             gene_input = st.text_input("Genes for heatmap:", value="")
     
-             if gene_input:
+            if gene_input:
                 gene_list = [g.strip().lower() for g in gene_input.split(",") if g.strip()]
     
                 # Filter and aggregate RNA
