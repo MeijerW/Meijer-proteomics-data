@@ -123,7 +123,7 @@ with main_tab1:
                 else:
                     import seaborn as sns
                     import matplotlib.pyplot as plt
-    
+                
                     # Get clustering-based order from RNA
                     g = sns.clustermap(
                         rna_avg,
@@ -135,52 +135,69 @@ with main_tab1:
                     )
                     gene_order = [rna_avg.index[i] for i in g.dendrogram_row.reordered_ind]
                     plt.close()
-    
+                
                     # Reorder both
                     rna_ordered = rna_avg.loc[gene_order]
                     prot_ordered = prot_avg.loc[gene_order]
-    
+                
                     # Set up joint color scale
-                    vmin = min(rna_ordered.min().min(), prot_ordered.min().min())
-                    vmax = max(rna_ordered.max().max(), prot_ordered.max().max())
-    
-                    # Create joint figure with horizontal colorbar
-                    fig, (ax1, ax2) = plt.subplots(
-                        1, 2,
-                        figsize=(12, len(gene_order) * 0.4 + 2),
-                        gridspec_kw={"width_ratios": [1, 1], "wspace": 0.05},
-                        sharey=True
-                    )
-    
-                    # Plot RNA
+                    vmin = min(np.nanmin(rna_ordered.values), np.nanmin(prot_ordered.values))
+                    vmax = max(np.nanmax(rna_ordered.values), np.nanmax(prot_ordered.values))
+                
+                    # Create figure with GridSpec: 2 cols (plots), 2 rows (heatmap + colorbar)
+                    fig = plt.figure(figsize=(12, len(gene_order)*0.4 + 3))
+                    gs = gridspec.GridSpec(2, 2, height_ratios=[20, 1], hspace=0.3, wspace=0.1)
+                
+                    ax1 = fig.add_subplot(gs[0, 0])  # RNA heatmap
+                    ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)  # Protein heatmap
+                    cax1 = fig.add_subplot(gs[1, 0])  # RNA colorbar
+                    cax2 = fig.add_subplot(gs[1, 1])  # Protein colorbar
+                
+                    # Plot RNA heatmap without colorbar & no yticklabels
                     sns.heatmap(
                         rna_ordered,
                         cmap="viridis",
                         vmin=vmin, vmax=vmax,
                         ax=ax1,
                         cbar=False,
-                        yticklabels=False  # Hide y-labels here
+                        yticklabels=False
                     )
-                    ax1.set_title("RNA (Clustered)", fontsize=16, fontweight='bold')
-                    ax1.set_xlabel("Region")
+                    ax1.set_title("RNA", fontsize=16, fontweight='bold')
+                    ax1.set_xlabel(" ")
                     ax1.set_ylabel("")
-    
-                    # Plot Protein (with gene names on y-axis)
-                    heat = sns.heatmap(
+                
+                    # Plot Protein heatmap without colorbar, with gene labels on right side
+                    sns.heatmap(
                         prot_ordered,
                         cmap="viridis",
                         vmin=vmin, vmax=vmax,
                         ax=ax2,
-                        cbar=True,
-                        cbar_kws={"orientation": "horizontal", "shrink": 0.6, "pad": 0.25}
+                        cbar=False,
+                        yticklabels=True
                     )
-                    ax2.set_title("Protein (Same Order)", fontsize=16, fontweight='bold')
-                    ax2.set_xlabel("Region")
+                    ax2.set_title("Protein", fontsize=16, fontweight='bold')
+                    ax2.set_xlabel(" ")
                     ax2.set_ylabel("")
+                    ax2.yaxis.tick_right()
+                    ax2.yaxis.set_label_position("right")
                     ax2.set_yticklabels(prot_ordered.index, rotation=0)
-    
+                
+                    # Add horizontal colorbars aligned under each heatmap
+                    norm = plt.Normalize(vmin=vmin, vmax=vmax)
+                    sm = plt.cm.ScalarMappable(cmap="viridis", norm=norm)
+                    sm.set_array([])  # needed for colorbar
+                
+                    # RNA colorbar
+                    cbar1 = fig.colorbar(sm, cax=cax1, orientation='horizontal')
+                    cbar1.set_label("Z-score (RNA)")
+                    cbar1.ax.xaxis.set_ticks_position('bottom')
+                
+                    # Protein colorbar
+                    cbar2 = fig.colorbar(sm, cax=cax2, orientation='horizontal')
+                    cbar2.set_label("Z-score (Protein)")
+                    cbar2.ax.xaxis.set_ticks_position('bottom')
+                
                     st.pyplot(fig)
-
 
 # ────────── Spatiotemporal Viewer ──────────
 with main_tab2:
