@@ -126,9 +126,18 @@ with main_tab1:
                 rna_avg = rna_avg.reindex(all_genes_found).sort_index()
                 prot_avg = prot_avg.reindex(all_genes_found).sort_index()
             
+                # After you create gene_list, rna_avg, prot_avg, and all_genes_found:
+
+                all_genes_entered = set(gene_list)
+                genes_not_found = all_genes_entered - all_genes_found
+                
+                if genes_not_found:
+                    st.warning(f"The following genes were not found in either dataset and will be skipped: {', '.join(sorted(genes_not_found))}")
+                
                 if rna_avg.empty and prot_avg.empty:
                     st.warning("None of the entered genes were found in either dataset.")
                 else:
+                    # ... continue with plotting code ...
                     if cluster_on == "RNA":
                         cluster_df = rna_avg
                         other_df = prot_avg
