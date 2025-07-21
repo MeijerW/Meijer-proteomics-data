@@ -2,80 +2,63 @@ import streamlit as st
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from scipy.stats import zscore
 
-st.set_page_config(layout="wide")
+# Set base URL for GitHub raw files
+BASE = "https://raw.githubusercontent.com/MeijerW/ProteomeUI/main/Datafiles/"
 
-st.title("🧬 Spatial RNA & Proteomics Expression Explorer")
-
-
+# Load preprocessed data
 @st.cache_data
 def load_data():
-#load spatial data
-    BASE = "https://raw.githubusercontent.com/MeijerW/ProteomeUI/main/Datafiles/"
-    rna = pd.read_csv(BASE + "RNAseq_Spatial_Normed_counts.csv", index_col=0, sep=';')
-    rna_meta = pd.read_csv(BASE + "RNAseq-metadata-spatial.csv", sep=';')
-    prot = pd.read_csv(BASE + "Proteomics_Spatial_Short.csv", index_col=0, sep=';')
-    prot_meta = pd.read_csv(BASE + "Proteomics-metadata-spatial.csv", sep=';')
-    return rna, rna_meta, prot, prot_meta
+    rna = pd.read_csv(BASE + "RNA_preprocessed.csv")
+    prot = pd.read_csv(BASE + "Protein_preprocessed.csv")
+    return rna, prot
 
+# Load data
+@st.cache_data
+def load_data():
+    rna = pd.read_csv(RNA_URL)
+    prot = pd.read_csv(PROT_URL)
+    return rna, prot
 
-rna, rna_meta, prot, prot_meta = load_data()
+rna_df, prot_df = load_data()
 
-# -- Preprocessing ----------------------------------------------
+# Set page
+st.title("Spatial Gene Expression Viewer")
+st.markdown("Compare spatial expression of a gene across RNA and Protein levels.")
 
-# Ensure sample names match column names
-rna_samples = rna_meta['sample'].values
-prot_samples = prot_meta['sample'].values
-
-# Filter for the relevant samples only
-rna_filtered = rna[rna_samples]
-prot_filtered = prot[prot_samples]
-
-# Z-score per gene (row-wise)
-rna_z = rna_filtered.apply(zscore, axis=1)
-prot_z = prot_filtered.apply(zscore, axis=1)
-
-# Melt for plotting
-def melt_with_meta(df_z, meta_df, source_label):
-    st.write(df_z.T.reset_index().columns)
-    df_long = (df_z.T.reset_index().rename(columns={"index": "sample"}).melt(id_vars="sample", var_name="Gene", value_name="Z-score"))
-    df_long = df_long.merge(meta_df, on="sample", how="left")
-    df_long["Source"] = source_label
-    return df_long
-
-rna_long = melt_with_meta(rna_z, rna_meta, "RNA")
-prot_long = melt_with_meta(prot_z, prot_meta, "Protein")
-
-# Combine both for easier plotting
-combined_df = pd.concat([rna_long, prot_long], axis=0)
-
-# -- User Input & Plotting --------------------------------------
-
-gene_input = st.text_input("Enter a gene name :", placeholder="Tbx6")
+# Input box for gene name
+gene_input = st.text_input("Enter gene name (e.g., tbx6):", value="tbx6")
 
 if gene_input:
-    gene = gene_input.strip()
-    gene_df = combined_df[combined_df["Gene"].str.lower() == gene.lower()]
+    # Filter by gene (case-insensitive match)
+    rna_plot = rna_df[rna_df["Gene"].str.lower() == gene_input.lower()]
+    prot_plot = prot_df[prot_df["Gene"].str.lower() == gene_input.lower()]
 
-    if not gene_df.empty:
-        cols = st.columns(2)
-
-        for source, col in zip(["RNA", "Protein"], cols):
-            plot_df = gene_df[gene_df["Source"] == source]
-
-            if not plot_df.empty:
-                with col:
-                    st.subheader(f"{source} Expression (Z-score)")
-                    fig, ax = plt.subplots(figsize=(5, 5))
-                    sns.boxplot(data=plot_df, x="goup", y="Z-score", ax=ax)
-                    sns.stripplot(data=plot_df, x="goup", y="Z-score", hue="replicate", dodge=True, ax=ax, palette="dark:.4", legend=False)
-                    ax.set_title(f"{gene.upper()} in {source}")
-                    ax.set_xlabel("Region")
-                    ax.set_ylabel("Z-score")
-                    st.pyplot(fig)
-            else:
-                with col:
-                    st.warning(f"{gene} not found in {source} dataset.")
+    if rna_plot.empty and prot_plot.empty:
+        st.warning(f"No data found for gene '{gene_input}'.")
     else:
-        st.warning(f"Gene '{gene}' not found in either dataset.")
+        # Create side-by-side boxplots
+        fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+
+        sns.boxplot(
+            data=rna_plot, 
+            x="region", 
+            y="Z-score", 
+            order=["posterior", "anterior", "somite"],
+            ax=axes[0]
+        )
+        axes[0].set_title("RNA Expression")
+        axes[0].set_xlabel("Region")
+        axes[0].set_ylabel("Z-score")
+
+        sns.boxplot(
+            data=prot_plot, 
+            x="region", 
+            y="Z-score", 
+            order=["posterior", "anterior", "somite"],
+            ax=axes[1]
+        )
+        axes[1].set_title("Protein Expression")
+        axes[1].set_xlabel("Region")
+
+        st.pyplot(fig)
