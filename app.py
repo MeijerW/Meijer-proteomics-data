@@ -119,6 +119,16 @@ with main_tab1:
                     if isinstance(unstacked, pd.Series):
                         unstacked = unstacked.to_frame().T  # transpose to get genes as rows
                     
+                    # Make a clean copy of the DataFrame to avoid potential pandas view issues
+                    unstacked = unstacked.copy()
+                    
+                    # Optionally ensure index is string type
+                    unstacked.index = unstacked.index.astype(str)
+
+                    # Also ensure the index is a proper Index object (sometimes can be None)
+                    if unstacked.index.name != 'Gene':
+                        unstacked.index.name = 'Gene'
+                    
                     return unstacked
             
                 rna_avg = prepare_avg(rna_subset)
