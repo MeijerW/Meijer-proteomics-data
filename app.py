@@ -104,12 +104,26 @@ with main_tab1:
     
                 # Filter and aggregate RNA
                 rna_subset = rna_df[rna_df["Gene"].str.lower().isin(gene_list)]
-                rna_avg = rna_subset.groupby(["Gene", "group"])["Z-score"].mean().unstack(fill_value=None)
+                rna_avg = rna_subset.groupby(["Gene", "group"])["Z-score"].mean().unstack(fill_value=np.nan)
     
                 # Filter and aggregate Protein
                 prot_subset = prot_df[prot_df["Gene"].str.lower().isin(gene_list)]
-                prot_avg = prot_subset.groupby(["Gene", "group"])["Z-score"].mean().unstack(fill_value=None)
-    
+                prot_avg = prot_subset.groupby(["Gene", "group"])["Z-score"].mean().unstack(fill_value=np.nan)
+                
+                # After filtering for selected genes, e.g. rna_subset and prot_subset
+                def prepare_avg(df):
+                    grouped = df.groupby(['Gene', 'group'])['Z-score'].mean()
+                    unstacked = grouped.unstack(fill_value=np.nan)
+                    
+                    # If only one gene, unstack returns Series -> convert to DataFrame
+                    if isinstance(unstacked, pd.Series):
+                        unstacked = unstacked.to_frame().T  # transpose to get genes as rows
+                    
+                    return unstacked
+            
+                rna_avg = prepare_avg(rna_subset)
+                prot_avg = prepare_avg(prot_subset)               
+                
                 # Ensure consistent region order
                 expected_regions = ["posterior", "anterior", "somite"]
                 rna_avg = rna_avg.reindex(columns=expected_regions)
@@ -122,9 +136,8 @@ with main_tab1:
     
                 if rna_avg.empty and prot_avg.empty:
                     st.warning("None of the entered genes were found in either dataset.")
+                    st.stop()
                 else:
-                    import seaborn as sns
-                    import matplotlib.pyplot as plt
                 
                     # Get clustering-based order from RNA
                     g = sns.clustermap(
