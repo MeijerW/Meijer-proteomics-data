@@ -61,10 +61,10 @@ if gene_input:
             palette=rna_palette,
             ax=axes[0]
         )
-        axes[0].set_title("RNA Expression", fontsize=16, fontweight='bold')
+        axes[0].set_title("RNA Expression", fontsize=26, fontweight='bold')
         axes[0].set_xlabel("")  # Remove x-axis label
-        axes[0].set_ylabel("Z-score", fontsize=12)
-        axes[0].tick_params(axis='x', labelsize=12)
+        axes[0].set_ylabel("Z-score", fontsize=16)
+        axes[0].tick_params(axis='x', labelsize=16)
 
         # Plot Protein
         sns.boxplot(
@@ -75,10 +75,10 @@ if gene_input:
             palette=prot_palette,
             ax=axes[1]
         )
-        axes[1].set_title("Protein Expression", fontsize=16, fontweight='bold')
+        axes[1].set_title("Protein Expression", fontsize=26, fontweight='bold')
         axes[1].set_xlabel("")  # Remove x-axis label
         axes[1].set_ylabel("")  # Remove y-axis label to reduce clutter
-        axes[1].tick_params(axis='x', labelsize=12)
+        axes[1].tick_params(axis='x', labelsize=16)
 
         plt.tight_layout()
         st.pyplot(fig)
