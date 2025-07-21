@@ -3,6 +3,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.gridspec as gridspec
 
 BASE = "https://raw.githubusercontent.com/MeijerW/ProteomeUI/main/Datafiles/"
 
