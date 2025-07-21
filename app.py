@@ -96,44 +96,36 @@ with main_tab1:
         with subtab2:
             st.markdown("### Spatial Heatmap for Multiple Genes")
             st.markdown("Enter multiple gene names separated by commas (e.g., `tbx6, msgn1, dlc`). Capitalization does not matter")
-        
+    
             gene_input = st.text_input("Genes for heatmap:", value="")
-        
+
             cluster_on = st.selectbox("Cluster based on:", ["RNA", "Protein"])
-        
+            
             if gene_input:
                 gene_list = [g.strip().lower() for g in gene_input.split(",") if g.strip()]
-        
-                # Filter and aggregate RNA and Protein data
+            
+                # Filter and aggregate RNA
                 rna_subset = rna_df[rna_df["Gene"].str.lower().isin(gene_list)]
                 prot_subset = prot_df[prot_df["Gene"].str.lower().isin(gene_list)]
-        
+            
                 def prepare_avg(df):
                     grouped = df.groupby(['Gene', 'group'])['Z-score'].mean()
                     unstacked = grouped.unstack(fill_value=np.nan)
                     if isinstance(unstacked, pd.Series):
                         unstacked = unstacked.to_frame().T
                     return unstacked
-        
+            
                 rna_avg = prepare_avg(rna_subset)
                 prot_avg = prepare_avg(prot_subset)
-        
+            
                 expected_regions = ["posterior", "anterior", "somite"]
                 rna_avg = rna_avg.reindex(columns=expected_regions)
                 prot_avg = prot_avg.reindex(columns=expected_regions)
-        
-                genes_in_rna = set(rna_subset['Gene'].str.lower())
-                genes_in_prot = set(prot_subset['Gene'].str.lower())
-                all_genes_found = genes_in_rna.union(genes_in_prot)
+            
+                all_genes_found = set(rna_avg.index).union(set(prot_avg.index))
                 rna_avg = rna_avg.reindex(all_genes_found).sort_index()
                 prot_avg = prot_avg.reindex(all_genes_found).sort_index()
-        
-                all_genes_entered = set(gene_list)
-                genes_not_found = all_genes_entered - all_genes_found
-        
-                if genes_not_found:
-                    st.warning(f"The following genes were not found in either dataset and will be skipped: {', '.join(sorted(genes_not_found))}")
-        
+            
                 if rna_avg.empty and prot_avg.empty:
                     st.warning("None of the entered genes were found in either dataset.")
                 else:
@@ -147,19 +139,14 @@ with main_tab1:
                         other_df = rna_avg
                         cluster_label = "Protein"
                         other_label = "RNA"
-        
-                    # Fill NaNs with row means before clustering (to avoid errors)
-                    cluster_df_filled = cluster_df.apply(lambda row: row.fillna(row.mean()), axis=1)
-                    other_df_filled = other_df.loc[cluster_df_filled.index].apply(lambda row: row.fillna(row.mean()), axis=1)
-        
-                    if len(cluster_df_filled) == 1:
-                        # Single gene heatmap
+            
+                    if len(cluster_df) == 1:
                         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 6), sharey=True)
-                        vmin = min(np.nanmin(cluster_df_filled.values), np.nanmin(other_df_filled.values))
-                        vmax = max(np.nanmax(cluster_df_filled.values), np.nanmax(other_df_filled.values))
-        
+                        vmin = min(np.nanmin(cluster_df.values), np.nanmin(other_df.values))
+                        vmax = max(np.nanmax(cluster_df.values), np.nanmax(other_df.values))
+            
                         sns.heatmap(
-                            cluster_df_filled,
+                            cluster_df,
                             cmap="viridis",
                             vmin=vmin, vmax=vmax,
                             cbar=True,
@@ -167,9 +154,9 @@ with main_tab1:
                             yticklabels=False if cluster_on == "RNA" else True,
                         )
                         ax1.set_title(cluster_label, fontsize=16, fontweight='bold')
-        
+            
                         sns.heatmap(
-                            other_df_filled,
+                            other_df,
                             cmap="viridis",
                             vmin=vmin, vmax=vmax,
                             cbar=True,
@@ -177,45 +164,44 @@ with main_tab1:
                             yticklabels=True if cluster_on == "RNA" else False,
                         )
                         ax2.set_title(other_label, fontsize=16, fontweight='bold')
-        
                         if cluster_on == "RNA":
                             ax2.yaxis.tick_right()
                             ax2.yaxis.set_label_position("right")
-                            ax2.set_yticklabels(other_df_filled.index, rotation=0)
+                            ax2.set_yticklabels(other_df.index, rotation=0)
                         else:
                             ax1.yaxis.tick_right()
                             ax1.yaxis.set_label_position("right")
-                            ax1.set_yticklabels(other_df_filled.index, rotation=0)
-        
+                            ax1.set_yticklabels(other_df.index, rotation=0)
+            
                         st.pyplot(fig)
-        
+            
                     else:
                         # Multiple genes: cluster on chosen dataset
                         g = sns.clustermap(
-                            cluster_df_filled,
+                            cluster_df,
                             cmap="viridis",
                             figsize=(6, 10),
                             row_cluster=True,
                             col_cluster=False,
                             cbar_pos=None
                         )
-                        gene_order = [cluster_df_filled.index[i] for i in g.dendrogram_row.reordered_ind]
+                        gene_order = [cluster_df.index[i] for i in g.dendrogram_row.reordered_ind]
                         plt.close()
-        
+            
                         cluster_ordered = cluster_df.loc[gene_order]
                         other_ordered = other_df.loc[gene_order]
-        
+            
                         vmin = min(np.nanmin(cluster_ordered.values), np.nanmin(other_ordered.values))
                         vmax = max(np.nanmax(cluster_ordered.values), np.nanmax(other_ordered.values))
-        
+            
                         fig = plt.figure(figsize=(12, len(gene_order)*0.4 + 3))
                         gs = gridspec.GridSpec(2, 2, height_ratios=[20, 1], hspace=0.3, wspace=0.1)
-        
+            
                         ax1 = fig.add_subplot(gs[0, 0])
                         ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)
                         cax1 = fig.add_subplot(gs[1, 0])
                         cax2 = fig.add_subplot(gs[1, 1])
-        
+            
                         sns.heatmap(
                             cluster_ordered,
                             cmap="viridis",
@@ -227,7 +213,7 @@ with main_tab1:
                         ax1.set_title(cluster_label, fontsize=16, fontweight='bold')
                         ax1.set_xlabel("")
                         ax1.set_ylabel("")
-        
+            
                         sns.heatmap(
                             other_ordered,
                             cmap="viridis",
@@ -242,19 +228,19 @@ with main_tab1:
                         ax2.yaxis.tick_right()
                         ax2.yaxis.set_label_position("right")
                         ax2.set_yticklabels(other_ordered.index, rotation=0)
-        
+            
                         norm = plt.Normalize(vmin=vmin, vmax=vmax)
                         sm = plt.cm.ScalarMappable(cmap="viridis", norm=norm)
                         sm.set_array([])
-        
+            
                         cbar1 = fig.colorbar(sm, cax=cax1, orientation='horizontal')
                         cbar1.set_label(f"Z-score ({cluster_label})")
                         cbar1.ax.xaxis.set_ticks_position('bottom')
-        
+            
                         cbar2 = fig.colorbar(sm, cax=cax2, orientation='horizontal')
                         cbar2.set_label(f"Z-score ({other_label})")
                         cbar2.ax.xaxis.set_ticks_position('bottom')
-        
+            
                         st.pyplot(fig)
 
 # ────────── Spatiotemporal Viewer ──────────
