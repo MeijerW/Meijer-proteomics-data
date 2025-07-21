@@ -38,7 +38,8 @@ prot_z = prot_filtered.apply(zscore, axis=1)
 
 # Melt for plotting
 def melt_with_meta(df_z, meta_df, source_label):
-    df_long = (df_z.T.reset_index().rename(columns={"index": "sample"}).melt(id_vars="Sample", var_name="Gene", value_name="Z-score"))
+    st.write(df_z.T.reset_index().columns)
+    df_long = (df_z.T.reset_index().rename(columns={"index": "sample"}).melt(id_vars="sample", var_name="Gene", value_name="Z-score"))
     df_long = df_long.merge(meta_df, on="sample", how="left")
     df_long["Source"] = source_label
     return df_long
