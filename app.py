@@ -97,7 +97,7 @@ with main_tab1:
     
             gene_input = st.text_input("Genes for heatmap:", value="")
     
-            if gene_input:
+             if gene_input:
                 gene_list = [g.strip().lower() for g in gene_input.split(",") if g.strip()]
     
                 # Filter and aggregate RNA
@@ -108,65 +108,76 @@ with main_tab1:
                 prot_subset = prot_df[prot_df["Gene"].str.lower().isin(gene_list)]
                 prot_avg = prot_subset.groupby(["Gene", "group"])["Z-score"].mean().unstack(fill_value=None)
     
-                # Ensure all 3 regions are present in all rows
+                # Ensure consistent region order
                 expected_regions = ["posterior", "anterior", "somite"]
                 rna_avg = rna_avg.reindex(columns=expected_regions)
                 prot_avg = prot_avg.reindex(columns=expected_regions)
     
-                # Drop genes not found in either dataset
+                # Combine unique gene names found in either
                 all_genes_found = set(rna_avg.index).union(set(prot_avg.index))
                 rna_avg = rna_avg.reindex(all_genes_found).sort_index()
                 prot_avg = prot_avg.reindex(all_genes_found).sort_index()
     
-                # Show heatmaps only if any genes were found
                 if rna_avg.empty and prot_avg.empty:
                     st.warning("None of the entered genes were found in either dataset.")
                 else:
                     import seaborn as sns
                     import matplotlib.pyplot as plt
     
-                    # Use Seaborn clustermap for RNA to get ordering
+                    # Get clustering-based order from RNA
                     g = sns.clustermap(
                         rna_avg,
-                        cmap="YlGnBu",
+                        cmap="viridis",
                         figsize=(6, 10),
                         row_cluster=True,
                         col_cluster=False,
                         cbar_pos=None
                     )
-                    # Extract gene order
                     gene_order = [rna_avg.index[i] for i in g.dendrogram_row.reordered_ind]
-                    plt.close()  # Close the clustermap plot so it doesn't show twice
+                    plt.close()
     
-                    # Reorder protein data to match
-                    prot_ordered = prot_avg.reindex(gene_order)
+                    # Reorder both
+                    rna_ordered = rna_avg.loc[gene_order]
+                    prot_ordered = prot_avg.loc[gene_order]
     
-                    # Plot side-by-side
-                    fig, axes = plt.subplots(1, 2, figsize=(12, len(gene_order) * 0.4 + 2), sharey=True)
+                    # Set up joint color scale
+                    vmin = min(rna_ordered.min().min(), prot_ordered.min().min())
+                    vmax = max(rna_ordered.max().max(), prot_ordered.max().max())
     
-                    # Plot RNA (reusing heatmap from clustermap)
-                    sns.heatmap(
-                        rna_avg.loc[gene_order],
-                        cmap="YlGnBu",
-                        ax=axes[0],
-                        cbar=True,
-                        vmin=-2, vmax=2
+                    # Create joint figure with horizontal colorbar
+                    fig, (ax1, ax2) = plt.subplots(
+                        1, 2,
+                        figsize=(12, len(gene_order) * 0.4 + 2),
+                        gridspec_kw={"width_ratios": [1, 1], "wspace": 0.05},
+                        sharey=True
                     )
-                    axes[0].set_title("RNA (Clustered)", fontsize=16, fontweight='bold')
-                    axes[0].set_ylabel("Genes")
-                    axes[0].set_xlabel("Region")
     
-                    # Plot Protein
+                    # Plot RNA
                     sns.heatmap(
+                        rna_ordered,
+                        cmap="viridis",
+                        vmin=vmin, vmax=vmax,
+                        ax=ax1,
+                        cbar=False,
+                        yticklabels=False  # Hide y-labels here
+                    )
+                    ax1.set_title("RNA (Clustered)", fontsize=16, fontweight='bold')
+                    ax1.set_xlabel("Region")
+                    ax1.set_ylabel("")
+    
+                    # Plot Protein (with gene names on y-axis)
+                    heat = sns.heatmap(
                         prot_ordered,
-                        cmap="YlGnBu",
-                        ax=axes[1],
+                        cmap="viridis",
+                        vmin=vmin, vmax=vmax,
+                        ax=ax2,
                         cbar=True,
-                        vmin=-2, vmax=2
+                        cbar_kws={"orientation": "horizontal", "shrink": 0.6, "pad": 0.25}
                     )
-                    axes[1].set_title("Protein (Same Order)", fontsize=16, fontweight='bold')
-                    axes[1].set_ylabel("")
-                    axes[1].set_xlabel("Region")
+                    ax2.set_title("Protein (Same Order)", fontsize=16, fontweight='bold')
+                    ax2.set_xlabel("Region")
+                    ax2.set_ylabel("")
+                    ax2.set_yticklabels(prot_ordered.index, rotation=0)
     
                     st.pyplot(fig)
 
