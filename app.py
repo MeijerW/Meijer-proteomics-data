@@ -122,7 +122,9 @@ with main_tab1:
                 rna_avg = rna_avg.reindex(columns=expected_regions)
                 prot_avg = prot_avg.reindex(columns=expected_regions)
             
-                all_genes_found = set(rna_avg.index).union(set(prot_avg.index))
+                genes_in_rna = set(rna_subset['Gene'].str.lower())
+                genes_in_prot = set(prot_subset['Gene'].str.lower())
+                all_genes_found = genes_in_rna.union(genes_in_prot)
                 rna_avg = rna_avg.reindex(all_genes_found).sort_index()
                 prot_avg = prot_avg.reindex(all_genes_found).sort_index()
             
