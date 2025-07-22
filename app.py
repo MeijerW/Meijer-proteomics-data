@@ -32,8 +32,8 @@ PROT_URL = BASE + "Protein_preprocessed.csv"
 # Spatiotemporal file templates
 SPATIOTEMPORAL_REGIONS = ["anterior", "posterior", "somite"]
 
-SPATIOTEMPORAL_RNA_TEMPLATE = BASE + "RNAseq_Spatiotemporal_{}.tsv"
-SPATIOTEMPORAL_PROT_TEMPLATE = BASE + "Proteomics_Spatiotemporal_{}.tsv"
+SPATIOTEMPORAL_RNA_TEMPLATE = BASE + "RNAseq_Spatiotemporal_{}.csv"
+SPATIOTEMPORAL_PROT_TEMPLATE = BASE + "Protein_Spatiotemporal_{}.csv"
 
 # Load spatial data
 @st.cache_data
@@ -66,18 +66,20 @@ def average_replicates(df, prefix="TP_", reps=3):
 
 
 # Load spatiotemporal data
+
 @st.cache_data
 def load_spatiotemporal_data(region):
     rna_url = SPATIOTEMPORAL_RNA_TEMPLATE.format(region)
     prot_url = SPATIOTEMPORAL_PROT_TEMPLATE.format(region)
     
-    rna = pd.read_csv(rna_url, sep="\t")
-    prot = pd.read_csv(prot_url, sep="\t")
+    # Read CSV instead of TSV
+    rna = pd.read_csv(rna_url)  # no sep="\t" needed for CSV
+    prot = pd.read_csv(prot_url)
     
     rna.set_index("ID", inplace=True)
     prot.set_index("ID", inplace=True)
     
-    # Compute averages for replicates
+    # Average replicates (RNA 3 reps, Protein 4 reps)
     rna_avg = average_replicates(rna, reps=3)
     prot_avg = average_replicates(prot, reps=4)
     
