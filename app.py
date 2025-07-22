@@ -235,12 +235,79 @@ with main_tab2:
 
     with subtab3:
         st.markdown("### Single gene dynamic expression")
-        # Add RNA time series logic here
+    # Load and index data
+    @st.cache_data
+    def load_temporal_data():
+        def load(name): return pd.read_csv(BASE + name).set_index("ID")
+
+        return {
+            "RNA": {
+                "Anterior": load("RNAseq_Spatiotemporal_anterior.csv"),
+                "Posterior": load("RNAseq_Spatiotemporal_posterior.csv"),
+                "Somite": load("RNAseq_Spatiotemporal_somite.csv")
+            },
+            "Protein": {
+                "Anterior": load("Proteomics_Spatiotemporal_anterior.csv"),
+                "Posterior": load("Proteomics_Spatiotemporal_posterior.csv"),
+                "Somite": load("Proteomics_Spatiotemporal_somite.csv")
+            }
+        }
+
+    data = load_temporal_data()
+
+    gene = st.text_input("Enter gene name:", "Lfng")
+
+    if gene in data["RNA"]["Anterior"].index:
+        def prepare_long_df(df, region, dtype):
+            expr_cols = [col for col in df.columns if col.startswith("TP_")]
+            df_gene = df.loc[gene, expr_cols].to_frame().T
+            df_gene['Region'] = region
+            df_gene['DataType'] = dtype
+            long_df = df_gene.melt(id_vars=['Region', 'DataType'], var_name='Condition', value_name='Expression')
+            long_df['Time'] = long_df['Condition'].str.extract(r'TP_(\d+)_REP_\d+')[0]
+            long_df['Rep'] = long_df['Condition'].str.extract(r'REP_(\d+)')[0]
+            long_df['Time'] = pd.Categorical(long_df['Time'], categories=['30', '60', '90', '120'], ordered=True)
+            return long_df
+
+        dfs = []
+        for dtype in ['RNA', 'Protein']:
+            for region in ['Posterior', 'Anterior', 'Somite']:
+                df = data[dtype][region]
+                if gene in df.index:
+                    dfs.append(prepare_long_df(df, region, dtype))
+
+        combined = pd.concat(dfs)
+
+        # Set up plot
+        fig, axes = plt.subplots(2, 3, figsize=(15, 8), sharey=True)
+        for i, dtype in enumerate(["RNA", "Protein"]):
+            for j, region in enumerate(["Posterior", "Anterior", "Somite"]):
+                ax = axes[i, j]
+                subset = combined[(combined["Region"] == region) & (combined["DataType"] == dtype)]
+                sns.boxplot(data=subset, x='Time', y='Expression', ax=ax,
+                            order=['30', '60', '90', '120'], boxprops={'facecolor': 'lightblue' if dtype == "RNA" else "lightpink"},
+                            showcaps=True, fliersize=0)
+                sns.stripplot(data=subset, x='Time', y='Expression', ax=ax,
+                              order=['30', '60', '90', '120'], color='black', jitter=True, size=4)
+                ax.set_title(f"{dtype} - {region}")
+                ax.set_xlabel("Time (min)")
+                if j == 0:
+                    ax.set_ylabel("Expression")
+
+        fig.suptitle(f"Temporal Expression of {gene}", fontsize=18)
+        st.pyplot(fig)
+
+    else:
+        st.warning(f"Gene '{gene}' not found in the data.")
+    
 
     with subtab4:
         st.markdown("### Multi-gene Spatiotemporal Expression")
-        # Add Protein time series logic here
+
 
         # Select region
         region = st.selectbox("Select region", ["anterior", "posterior", "somite"])
+
+
+
 
