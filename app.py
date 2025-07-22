@@ -163,7 +163,7 @@ with main_tab1:
                         vmax=vmax_rna,
                         yticklabels=True
                     )
-                    ax1.set_title("RNA Expression (clustered)", fontsize=14)
+                    ax1.set_title("RNA Expression", fontsize=14)
                     ax1.set_xlabel("")
                     ax1.set_ylabel("")
                     ax1.set_yticklabels(rna_ordered.index, rotation=0)
