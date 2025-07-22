@@ -109,7 +109,7 @@ def plot_expression_grid(df, gene_name):
                 order=['30', '60', '90', '120'], size=3, jitter=True
             )
 
-            ax.set_title(f"{region}")
+            ax.set_title(f"{region}", fontsize=20)
             ax.set_xlabel("")
             ax.set_ylabel("Expression" if i == 0 else "")
 
@@ -119,8 +119,8 @@ def plot_expression_grid(df, gene_name):
             ax.set_ylim(y_min - y_pad, y_max + y_pad)
 
 
-    fig.text(0.01, 0.7, "RNA", va="center", ha="right", fontsize=14, fontweight="bold", rotation=90)
-    fig.text(0.01, 0.24, "Protein", va="center", ha="right", fontsize=14, fontweight="bold", rotation=90)
+    fig.text(0.01, 0.6, "RNA", va="center", ha="right", fontsize=20, fontweight="bold", rotation=90)
+    fig.text(0.01, 0.23, "Protein", va="center", ha="right", fontsize=20, fontweight="bold", rotation=90)
     fig.suptitle(f"Spatiotemporal Expression of {gene_name}", fontsize=26)
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     return fig
