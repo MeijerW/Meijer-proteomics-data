@@ -4,6 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.gridspec as gridspec
+import io
 
 BASE = "https://raw.githubusercontent.com/MeijerW/ProteomeUI/main/Datafiles/"
 
@@ -91,7 +92,18 @@ with main_tab1:
 
                 plt.tight_layout()
                 st.pyplot(fig)
-
+                # Save figure to a BytesIO buffer
+                buf = io.BytesIO()
+                fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
+                buf.seek(0)
+                
+                # Add download button
+                st.download_button(
+                    label="📥 Download Heatmap as PNG",
+                    data=buf,
+                    file_name="spatial_heatmap.png",
+                    mime="image/png"
+)
     # Heatmap Tab 
         with subtab2:
             st.markdown("### Spatial Heatmap for Multiple Genes")
@@ -204,6 +216,18 @@ with main_tab1:
                     cbar2.set_label("Z-score (Protein)")
         
                     st.pyplot(fig)
+                    # Save figure to a BytesIO buffer
+                    buf = io.BytesIO()
+                    fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
+                    buf.seek(0)
+                    
+                    # Add download button
+                    st.download_button(
+                        label="📥 Download Heatmap as PNG",
+                        data=buf,
+                        file_name="spatial_heatmap.png",
+                        mime="image/png"
+                    )
 
 # ────────── Spatiotemporal Viewer ──────────
 with main_tab2:
