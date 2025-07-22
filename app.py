@@ -175,7 +175,7 @@ with main_tab1:
                         cbar=False,
                         vmin=vmin_prot,
                         vmax=vmax_prot,
-                        yticklabels=True
+                        yticklabels=False
                     )
                     ax2.set_title("Protein Expression", fontsize=14)
                     ax2.set_xlabel("")
