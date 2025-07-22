@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.gridspec as gridspec
 import io
 
+# --- SETTINGS
 BASE = "https://raw.githubusercontent.com/MeijerW/ProteomeUI/main/Datafiles/"
 
 st.title("Somitogenesis Gene Expression Explorer")
@@ -25,11 +26,24 @@ prot_palette = {
     "anterior": "#b2b2d9",
     "somite": "#d7d6ea"
 }
-
 # Load data once, use throughout
 RNA_URL = BASE + "RNA_preprocessed.csv"
 PROT_URL = BASE + "Protein_preprocessed.csv"
+            
 
+RNA_FILES = {
+    "Anterior": "RNAseq_Spatiotemporal_anterior.csv",
+    "Posterior": "RNAseq_Spatiotemporal_posterior.csv",
+    "Somite": "RNAseq_Spatiotemporal_somite.csv",
+}
+PROT_FILES = {
+    "Anterior": "Proteomics_Spatiotemporal_anterior.csv",
+    "Posterior": "Proteomics_Spatiotemporal_posterior.csv",
+    "Somite": "Proteomics_Spatiotemporal_somite.csv",
+}
+
+
+#---FUNCTIONS
 @st.cache_data
 def load_data():
     rna = pd.read_csv(RNA_URL)
@@ -38,9 +52,75 @@ def load_data():
     prot['Type'] = 'Protein'
     return rna, prot
 
-rna_df, prot_df = load_data()
-rna_df['group'] = rna_df['group'].str.lower()
-prot_df['group'] = prot_df['group'].str.lower()
+@st.cache_data
+def load_spatiotemporal_data():
+    def load_files(file_dict):
+        dfs = {}
+        for region, filename in file_dict.items():
+            df = pd.read_csv(BASE + filename, sep=',')  # Although file says .tsv, it's actually CSV
+            df.set_index('ID', inplace=True)
+            dfs[region] = df
+        return dfs
+
+    return load_files(RNA_FILES), load_files(PROT_FILES)
+
+def prepare_long_df(df_dict, gene, datatype):
+    all_data = []
+    for region, df in df_dict.items():
+        if gene not in df.index:
+            continue
+        row = df.loc[gene]
+        expression = row.filter(like='TP_')
+        melted = expression.reset_index()
+        melted.columns = ['Condition', 'Expression']
+        melted['Time'] = melted['Condition'].str.extract(r'TP_(\d+)_REP_\d+')
+        melted['Rep'] = melted['Condition'].str.extract(r'REP_(\d+)')
+        melted['Time'] = pd.Categorical(melted['Time'], categories=['30', '60', '90', '120'], ordered=True)
+        melted['Region'] = region
+        melted['Type'] = datatype
+        all_data.append(melted)
+    return pd.concat(all_data, ignore_index=True)
+
+def plot_expression_grid(df, gene_name):
+    sns.set(style="whitegrid")
+    fig, axes = plt.subplots(2, 3, figsize=(14, 8), sharex=True)
+
+    for i, region in enumerate(["Anterior", "Posterior", "Somite"]):
+        for j, datatype in enumerate(["RNA", "Protein"]):
+            ax = axes[j, i]
+            sub_df = df[(df['Region'] == region) & (df['Type'] == datatype)]
+            if sub_df.empty:
+                ax.set_visible(False)
+                continue
+
+            # Select color
+            color = rna_palette[region] if datatype == "RNA" else prot_palette[region]
+
+            # Boxplot
+            sns.boxplot(
+                data=sub_df,
+                x="Time", y="Expression", color=color, ax=ax,
+                order=['30', '60', '90', '120'], fliersize=0, width=0.6
+            )
+            # Overlay replicates
+            sns.stripplot(
+                data=sub_df,
+                x="Time", y="Expression", color="black", ax=ax,
+                order=['30', '60', '90', '120'], size=3, jitter=True
+            )
+
+            ax.set_title(f"{datatype} - {region}")
+            ax.set_xlabel("")
+            ax.set_ylabel("Expression" if i == 0 else "")
+
+            # Dynamic y-limit
+            y_min, y_max = sub_df["Expression"].min(), sub_df["Expression"].max()
+            y_pad = (y_max - y_min) * 0.1 if y_max > y_min else 1
+            ax.set_ylim(y_min - y_pad, y_max + y_pad)
+
+    fig.suptitle(f"Spatiotemporal Expression of {gene_name}", fontsize=16)
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    return fig
 
 # Top-level tabs
 main_tab1, main_tab2 = st.tabs(["Spatial Viewer", "Spatiotemporal Viewer"])
@@ -49,6 +129,11 @@ main_tab1, main_tab2 = st.tabs(["Spatial Viewer", "Spatiotemporal Viewer"])
 with main_tab1:
     subtab1, subtab2 = st.tabs(["Single Gene", "Heatmap (Multiple Genes)"])
 
+    #Load spatial data directly
+    rna_df, prot_df = load_data()
+    rna_df['group'] = rna_df['group'].str.lower()
+    prot_df['group'] = prot_df['group'].str.lower()
+    
     # Single Gene Boxplot
     with subtab1:
         st.markdown("### Single Gene Spatial Expression")
@@ -235,71 +320,22 @@ with main_tab2:
 
     with subtab3:
         st.markdown("### Single gene dynamic expression")
-    # Load and index data
-    @st.cache_data
-    def load_temporal_data():
-        def load(name): return pd.read_csv(BASE + name).set_index("ID")
 
-        return {
-            "RNA": {
-                "Anterior": load("RNAseq_Spatiotemporal_anterior.csv"),
-                "Posterior": load("RNAseq_Spatiotemporal_posterior.csv"),
-                "Somite": load("RNAseq_Spatiotemporal_somite.csv")
-            },
-            "Protein": {
-                "Anterior": load("Proteomics_Spatiotemporal_anterior.csv"),
-                "Posterior": load("Proteomics_Spatiotemporal_posterior.csv"),
-                "Somite": load("Proteomics_Spatiotemporal_somite.csv")
-            }
-        }
-
-    data = load_temporal_data()
-
-    gene = st.text_input("Enter gene name:", "Lfng")
-
-    if gene in data["RNA"]["Anterior"].index:
-        def prepare_long_df(df, region, dtype):
-            expr_cols = [col for col in df.columns if col.startswith("TP_")]
-            df_gene = df.loc[gene, expr_cols].to_frame().T
-            df_gene['Region'] = region
-            df_gene['DataType'] = dtype
-            long_df = df_gene.melt(id_vars=['Region', 'DataType'], var_name='Condition', value_name='Expression')
-            long_df['Time'] = long_df['Condition'].str.extract(r'TP_(\d+)_REP_\d+')[0]
-            long_df['Rep'] = long_df['Condition'].str.extract(r'REP_(\d+)')[0]
-            long_df['Time'] = pd.Categorical(long_df['Time'], categories=['30', '60', '90', '120'], ordered=True)
-            return long_df
-
-        dfs = []
-        for dtype in ['RNA', 'Protein']:
-            for region in ['Posterior', 'Anterior', 'Somite']:
-                df = data[dtype][region]
-                if gene in df.index:
-                    dfs.append(prepare_long_df(df, region, dtype))
-
-        combined = pd.concat(dfs)
-
-        # Set up plot
-        fig, axes = plt.subplots(2, 3, figsize=(15, 8), sharey=True)
-        for i, dtype in enumerate(["RNA", "Protein"]):
-            for j, region in enumerate(["Posterior", "Anterior", "Somite"]):
-                ax = axes[i, j]
-                subset = combined[(combined["Region"] == region) & (combined["DataType"] == dtype)]
-                sns.boxplot(data=subset, x='Time', y='Expression', ax=ax,
-                            order=['30', '60', '90', '120'], boxprops={'facecolor': 'lightblue' if dtype == "RNA" else "lightpink"},
-                            showcaps=True, fliersize=0)
-                sns.stripplot(data=subset, x='Time', y='Expression', ax=ax,
-                              order=['30', '60', '90', '120'], color='black', jitter=True, size=4)
-                ax.set_title(f"{dtype} - {region}")
-                ax.set_xlabel("Time (min)")
-                if j == 0:
-                    ax.set_ylabel("Expression")
-
-        fig.suptitle(f"Temporal Expression of {gene}", fontsize=18)
-        st.pyplot(fig)
-
-    else:
-        st.warning(f"Gene '{gene}' not found in the data.")
+        # Input gene
+        gene_input = st.text_input("Enter gene name:", value="Lfng")
+        
+        if gene_input:
+            rna_long = prepare_long_df(rna_dict, gene_input, "RNA")
+            prot_long = prepare_long_df(prot_dict, gene_input, "Protein")
+            combined_df = pd.concat([rna_long, prot_long], ignore_index=True)
+        
+            if combined_df.empty:
+                st.warning(f"Gene '{gene_input}' not found in datasets.")
+            else:
+                fig = plot_expression_grid(combined_df, gene_input)
+                st.pyplot(fig)
     
+   
 
     with subtab4:
         st.markdown("### Multi-gene Spatiotemporal Expression")
