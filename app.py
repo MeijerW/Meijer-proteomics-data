@@ -125,18 +125,19 @@ with main_tab1:
                 if rna_avg.empty:
                     st.warning("None of the entered genes were found in the RNA dataset.")
                 else:
-                    # Run clustermap to extract dendrogram ordering
+                    # Run clustermap just to get gene order and dendrogram
                     g = sns.clustermap(
                         rna_avg,
                         row_cluster=True,
                         col_cluster=False,
                         cmap="viridis",
                         yticklabels=True,
-                        figsize=(1, 1),
+                        figsize=(4, 6),
                         cbar_pos=None
                     )
                     gene_order = [rna_avg.index[i] for i in g.dendrogram_row.reordered_ind]
-                    plt.close()
+                    dendrogram_ax = g.ax_row_dendrogram.figure
+                    plt.close(g.fig)
         
                     rna_ordered = rna_avg.loc[gene_order]
                     prot_ordered = prot_avg.loc[gene_order]
@@ -144,39 +145,33 @@ with main_tab1:
                     vmin = min(np.nanmin(rna_ordered.values), np.nanmin(prot_ordered.values))
                     vmax = max(np.nanmax(rna_ordered.values), np.nanmax(prot_ordered.values))
         
-                    # Plot combined figure
-                    fig = plt.figure(figsize=(12, len(gene_order)*0.3 + 2))
-                    gs = gridspec.GridSpec(3, 2, height_ratios=[20, 1, 1], width_ratios=[1, 1], hspace=0.2, wspace=0.05)
+                    # Prepare new figure layout
+                    fig = plt.figure(figsize=(12, len(gene_order) * 0.4 + 3))
+                    gs = gridspec.GridSpec(3, 3, width_ratios=[1, 5, 5], height_ratios=[20, 1, 1], wspace=0.05, hspace=0.3)
         
-                    # Dendrogram + RNA heatmap
-                    g = sns.clustermap(
-                        rna_avg,
-                        row_cluster=True,
-                        col_cluster=False,
-                        cmap="viridis",
-                        yticklabels=False,
-                        figsize=(6, 6),
-                        cbar_pos=None
-                    )
+                    # Left dendrogram
+                    ax_dendro = fig.add_subplot(gs[0, 0])
+                    g = sns.clustermap(rna_avg, row_cluster=True, col_cluster=False, cmap="viridis", cbar_pos=None)
+                    dendro_img = g.ax_row_dendrogram.images[0]
+                    ax_dendro.imshow(dendro_img.get_array(), aspect='auto', cmap="Greys")
+                    ax_dendro.axis('off')
                     plt.close(g.fig)
         
-                    heatmap_ax = fig.add_subplot(gs[0, 0])
-                    for child in g.ax_heatmap.get_children():
-                        heatmap_ax.add_artist(child)
-                    heatmap_ax.set_title("RNA Expression (clustered)", fontsize=14)
-                    heatmap_ax.set_xlabel("")
-                    heatmap_ax.set_ylabel("")
-        
-                    # RNA colorbar
-                    cax1 = fig.add_subplot(gs[1, 0])
-                    norm = plt.Normalize(vmin=vmin, vmax=vmax)
-                    sm = plt.cm.ScalarMappable(cmap="viridis", norm=norm)
-                    sm.set_array([])
-                    cbar1 = fig.colorbar(sm, cax=cax1, orientation='horizontal')
-                    cbar1.set_label("Z-score (RNA)")
+                    # RNA heatmap
+                    ax1 = fig.add_subplot(gs[0, 1])
+                    sns.heatmap(
+                        rna_ordered,
+                        cmap="viridis",
+                        vmin=vmin,
+                        vmax=vmax,
+                        ax=ax1,
+                        cbar=False,
+                        yticklabels=False
+                    )
+                    ax1.set_title("RNA Expression (clustered)", fontsize=14)
         
                     # Protein heatmap
-                    ax2 = fig.add_subplot(gs[0, 1], sharey=heatmap_ax)
+                    ax2 = fig.add_subplot(gs[0, 2], sharey=ax1)
                     sns.heatmap(
                         prot_ordered,
                         cmap="viridis",
@@ -187,17 +182,22 @@ with main_tab1:
                         yticklabels=True
                     )
                     ax2.set_title("Protein Expression", fontsize=14)
-                    ax2.set_xlabel("")
-                    ax2.set_ylabel("")
                     ax2.yaxis.tick_right()
                     ax2.yaxis.set_label_position("right")
                     ax2.set_yticklabels(prot_ordered.index, rotation=0)
         
-                    # Protein colorbar
-                    cax2 = fig.add_subplot(gs[2, 1])
-                    sm2 = plt.cm.ScalarMappable(cmap="viridis", norm=norm)
+                    # Colorbars
+                    cax1 = fig.add_subplot(gs[1, 1])
+                    cax2 = fig.add_subplot(gs[2, 2])
+                    norm = plt.Normalize(vmin=vmin, vmax=vmax)
+                    sm1 = plt.cm.ScalarMappable(norm=norm, cmap="viridis")
+                    sm1.set_array([])
+                    cbar1 = fig.colorbar(sm1, cax=cax1, orientation="horizontal")
+                    cbar1.set_label("Z-score (RNA)")
+        
+                    sm2 = plt.cm.ScalarMappable(norm=norm, cmap="viridis")
                     sm2.set_array([])
-                    cbar2 = fig.colorbar(sm2, cax=cax2, orientation='horizontal')
+                    cbar2 = fig.colorbar(sm2, cax=cax2, orientation="horizontal")
                     cbar2.set_label("Z-score (Protein)")
         
                     st.pyplot(fig)
