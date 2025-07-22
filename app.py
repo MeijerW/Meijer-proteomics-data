@@ -44,14 +44,44 @@ def load_spatial_data():
     prot['Type'] = 'Protein'
     return rna, prot
 
+def average_replicates(df, prefix="TP_", reps=3):
+    """
+    Given a dataframe with replicate columns like TP_30_REP_1 ... TP_30_REP_n,
+    average replicates per timepoint and return a DataFrame with columns as timepoints.
+    """
+    timepoints = [30, 60, 90, 120]
+    averaged_data = {}
+    
+    for tp in timepoints:
+        rep_cols = [f"{prefix}{tp}_REP_{i+1}" for i in range(reps)]
+        # Some replicates might not exist, so filter cols that are in df
+        rep_cols = [col for col in rep_cols if col in df.columns]
+        if rep_cols:
+            averaged_data[f"{tp}min"] = df[rep_cols].mean(axis=1)
+        else:
+            # No data for this timepoint, fill with NaNs
+            averaged_data[f"{tp}min"] = np.nan
+
+    return pd.DataFrame(averaged_data, index=df.index)
+
+
 # Load spatiotemporal data
 @st.cache_data
 def load_spatiotemporal_data(region):
     rna_url = SPATIOTEMPORAL_RNA_TEMPLATE.format(region)
     prot_url = SPATIOTEMPORAL_PROT_TEMPLATE.format(region)
+    
     rna = pd.read_csv(rna_url, sep="\t")
     prot = pd.read_csv(prot_url, sep="\t")
-    return rna, prot
+    
+    rna.set_index("ID", inplace=True)
+    prot.set_index("ID", inplace=True)
+    
+    # Compute averages for replicates
+    rna_avg = average_replicates(rna, reps=3)
+    prot_avg = average_replicates(prot, reps=4)
+    
+    return rna_avg, prot_avg, rna, prot
 
 # Load spatial data immediately
 rna_df, prot_df = load_spatial_data()
