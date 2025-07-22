@@ -234,9 +234,13 @@ with main_tab2:
     subtab3, subtab4 = st.tabs(["RNA Time Series", "Protein Time Series"])
 
     with subtab3:
-        st.markdown("### Spatiotemporal RNA Expression")
+        st.markdown("### Single gene dynamic expression")
         # Add RNA time series logic here
 
     with subtab4:
-        st.markdown("### Spatiotemporal Protein Expression")
+        st.markdown("### Multi-gene Spatiotemporal Expression")
         # Add Protein time series logic here
+
+        # Select region
+        region = st.selectbox("Select region", ["anterior", "posterior", "somite"])
+
