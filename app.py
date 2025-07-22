@@ -94,7 +94,7 @@ def plot_expression_grid(df, gene_name):
                 continue
 
             # Select color
-            color = rna_palette[region] if datatype == "RNA" else prot_palette[region]
+            color = rna_palette[region.lower()] if datatype == "RNA" else prot_palette[region.lower()]
 
             # Boxplot
             sns.boxplot(
