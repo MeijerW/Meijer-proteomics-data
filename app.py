@@ -124,8 +124,9 @@ with main_tab1:
                 prot_avg = prot_avg.reindex(rna_avg.index).sort_index()
                 
                 # Check missing genes
-                genes_found = set(rna_avg.index).union(set(prot_avg.index))
-                genes_not_found = [g for g in gene_list if g not in genes_found]
+                # Normalize index to lowercase for comparison
+                found_genes_lower = {g.lower() for g in rna_avg.index.union(prot_avg.index)}
+                genes_not_found = [g for g in gene_list if g not in found_genes_lower]
                 
                 if genes_not_found:
                     st.warning(f"The following genes were not found in either RNA or Protein datasets and will not be shown: {', '.join(genes_not_found)}")
