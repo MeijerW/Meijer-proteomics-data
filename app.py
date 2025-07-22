@@ -101,107 +101,82 @@ with main_tab1:
         
             if gene_input:
                 gene_list = [g.strip().lower() for g in gene_input.split(",") if g.strip()]
-        
-                rna_subset = rna_df[rna_df["Gene"].str.lower().isin(gene_list)]
-                prot_subset = prot_df[prot_df["Gene"].str.lower().isin(gene_list)]
-        
+                
+                # Filter and prepare average expression per group
                 def prepare_avg(df):
                     grouped = df.groupby(['Gene', 'group'])['Z-score'].mean()
                     unstacked = grouped.unstack(fill_value=np.nan)
+                    # Ensure DataFrame shape
                     if isinstance(unstacked, pd.Series):
                         unstacked = unstacked.to_frame().T
                     return unstacked
-                        
+            
+                rna_subset = rna_df[rna_df["Gene"].str.lower().isin(gene_list)]
+                prot_subset = prot_df[prot_df["Gene"].str.lower().isin(gene_list)]
+            
                 rna_avg = prepare_avg(rna_subset)
                 prot_avg = prepare_avg(prot_subset)
-        
+            
                 expected_regions = ["posterior", "anterior", "somite"]
                 rna_avg = rna_avg.reindex(columns=expected_regions)
                 prot_avg = prot_avg.reindex(columns=expected_regions)
-        
-                rna_avg = rna_avg.dropna(how='all')
-                prot_avg = prot_avg.reindex(rna_avg.index).sort_index()
-        
-                if rna_avg.empty:
-                    st.warning("None of the entered genes were found in the RNA dataset.")
+            
+                # Combine gene sets for display, keeping all genes
+                all_genes = list(set(rna_avg.index).union(set(prot_avg.index)))
+                rna_avg = rna_avg.reindex(all_genes).sort_index()
+                prot_avg = prot_avg.reindex(all_genes).sort_index()
+            
+                if rna_avg.empty and prot_avg.empty:
+                    st.warning("None of the entered genes were found in either dataset.")
                 else:
-                    # Run clustermap just to get gene order and dendrogram
+                    # Cluster based on RNA data only
                     g = sns.clustermap(
                         rna_avg,
                         row_cluster=True,
                         col_cluster=False,
                         cmap="viridis",
                         yticklabels=True,
-                        figsize=(4, 6),
-                        cbar_pos=None
+                        figsize=(5, 6),
+                        cbar_pos=(0.15, 0.05, 0.3, 0.02)  # RNA colorbar position and size
                     )
+            
                     gene_order = [rna_avg.index[i] for i in g.dendrogram_row.reordered_ind]
-                    dendrogram_ax = g.ax_row_dendrogram.figure
-                    plt.close(g.fig)
-        
                     rna_ordered = rna_avg.loc[gene_order]
                     prot_ordered = prot_avg.loc[gene_order]
-        
-                    vmin = min(np.nanmin(rna_ordered.values), np.nanmin(prot_ordered.values))
-                    vmax = max(np.nanmax(rna_ordered.values), np.nanmax(prot_ordered.values))
-        
-                    # Prepare new figure layout
-                    fig = plt.figure(figsize=(12, len(gene_order) * 0.4 + 3))
-                    gs = gridspec.GridSpec(3, 3, width_ratios=[1, 5, 5], height_ratios=[20, 1, 1], wspace=0.05, hspace=0.3)
-        
-                    # Left dendrogram
-                    ax_dendro = fig.add_subplot(gs[0, 0])
-                    g = sns.clustermap(rna_avg, row_cluster=True, col_cluster=False, cmap="viridis", cbar_pos=None)
-                    dendro_img = g.ax_row_dendrogram.images[0]
-                    ax_dendro.imshow(dendro_img.get_array(), aspect='auto', cmap="Greys")
-                    ax_dendro.axis('off')
-                    plt.close(g.fig)
-        
-                    # RNA heatmap
-                    ax1 = fig.add_subplot(gs[0, 1])
-                    sns.heatmap(
-                        rna_ordered,
-                        cmap="viridis",
-                        vmin=vmin,
-                        vmax=vmax,
-                        ax=ax1,
-                        cbar=False,
-                        yticklabels=False
-                    )
-                    ax1.set_title("RNA Expression (clustered)", fontsize=14)
-        
-                    # Protein heatmap
-                    ax2 = fig.add_subplot(gs[0, 2], sharey=ax1)
+            
+                    # Protein heatmap (manual plot)
+                    fig = plt.figure(figsize=(6, 6))
+                    gs = gridspec.GridSpec(2, 1, height_ratios=[20, 1], hspace=0.3)
+            
+                    ax1 = fig.add_subplot(gs[0])
                     sns.heatmap(
                         prot_ordered,
                         cmap="viridis",
-                        vmin=vmin,
-                        vmax=vmax,
-                        ax=ax2,
+                        vmin=np.nanmin([rna_ordered.values.min(), prot_ordered.values.min()]),
+                        vmax=np.nanmax([rna_ordered.values.max(), prot_ordered.values.max()]),
+                        ax=ax1,
                         cbar=False,
                         yticklabels=True
                     )
-                    ax2.set_title("Protein Expression", fontsize=14)
-                    ax2.yaxis.tick_right()
-                    ax2.yaxis.set_label_position("right")
-                    ax2.set_yticklabels(prot_ordered.index, rotation=0)
-        
-                    # Colorbars
-                    cax1 = fig.add_subplot(gs[1, 1])
-                    cax2 = fig.add_subplot(gs[2, 2])
-                    norm = plt.Normalize(vmin=vmin, vmax=vmax)
-                    sm1 = plt.cm.ScalarMappable(norm=norm, cmap="viridis")
-                    sm1.set_array([])
-                    cbar1 = fig.colorbar(sm1, cax=cax1, orientation="horizontal")
-                    cbar1.set_label("Z-score (RNA)")
-        
-                    sm2 = plt.cm.ScalarMappable(norm=norm, cmap="viridis")
-                    sm2.set_array([])
-                    cbar2 = fig.colorbar(sm2, cax=cax2, orientation="horizontal")
-                    cbar2.set_label("Z-score (Protein)")
-        
-                    st.pyplot(fig)
-
+                    ax1.set_title("Protein Expression", fontsize=14)
+                    ax1.yaxis.tick_right()
+                    ax1.yaxis.set_label_position("right")
+            
+                    # Protein colorbar below heatmap
+                    cax = fig.add_subplot(gs[1])
+                    sm = plt.cm.ScalarMappable(
+                        cmap="viridis",
+                        norm=plt.Normalize(vmin=np.nanmin(prot_ordered.values), vmax=np.nanmax(prot_ordered.values))
+                    )
+                    sm.set_array([])
+                    fig.colorbar(sm, cax=cax, orientation="horizontal", label="Z-score (Protein)")
+            
+                    # Display side by side in Streamlit columns
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.pyplot(g.fig)
+                    with col2:
+                        st.pyplot(fig)
 
 # ────────── Spatiotemporal Viewer ──────────
 with main_tab2:
