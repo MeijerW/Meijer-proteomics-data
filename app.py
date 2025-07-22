@@ -25,58 +25,20 @@ prot_palette = {
     "anterior": "#b2b2d9",
     "somite": "#d7d6ea"
 }
-# Spatial data files
+
+# Load data once, use throughout
 RNA_URL = BASE + "RNA_preprocessed.csv"
 PROT_URL = BASE + "Protein_preprocessed.csv"
 
-# Spatiotemporal file templates
-SPATIOTEMPORAL_REGIONS = ["anterior", "posterior", "somite"]
-
-SPATIOTEMPORAL_RNA_TEMPLATE = BASE + "RNAseq_Spatiotemporal_{}.csv"
-SPATIOTEMPORAL_PROT_TEMPLATE = BASE + "Proteomics_Spatiotemporal_{}.csv"
-
-# Load spatial data
 @st.cache_data
-def load_spatial_data():
+def load_data():
     rna = pd.read_csv(RNA_URL)
     prot = pd.read_csv(PROT_URL)
     rna['Type'] = 'RNA'
     prot['Type'] = 'Protein'
     return rna, prot
 
-@st.cache_data
-def load_spatiotemporal_data(region):
-    st_rna_url = BASE + f"RNAseq_Spatiotemporal_{region}.csv"
-    st_prot_url = BASE + f"Proteomics_Spatiotemporal_{region}.csv"
-
-    st_rna = pd.read_csv(st_rna_url)
-    st_prot = pd.read_csv(st_prot_url)
-    st_rna['Type'] = 'RNA'
-    st_prot['Type'] = 'Protein'
-    
-    rna_expression = st_rna.filter(like="TP")
-    prot_expression = st_prot.filter(like="TP")
-    print (rna_expression, prot_expression)
-    
-    # Average replicates for RNA
-    rna_avg = rna_expression.groupby(
-        rna_expression.columns.str.extract(r"TP_(\d+)_REP_\d+")[0],
-        axis=1
-    ).mean()
-    rna_avg["ID"] = rna["ID"]
-
-    # Average replicates for Protein
-    prot_avg = prot_expression.groupby(
-        prot_expression.columns.str.extract(r"TP_(\d+)_REP_\d+")[0],
-        axis=1
-    ).mean()
-    prot_avg["ID"] = prot["ID"]
-
-    return rna_avg.set_index("ID"), prot_avg.set_index("ID")
-
-
-# Load spatial data immediately
-rna_df, prot_df = load_spatial_data()
+rna_df, prot_df = load_data()
 rna_df['group'] = rna_df['group'].str.lower()
 prot_df['group'] = prot_df['group'].str.lower()
 
@@ -269,32 +231,12 @@ with main_tab1:
 
 # ────────── Spatiotemporal Viewer ──────────
 with main_tab2:
-    subtab3, subtab4 = st.tabs(["Single gene dynamics", "Multi-gene heatmap"])
+    subtab3, subtab4 = st.tabs(["RNA Time Series", "Protein Time Series"])
 
     with subtab3:
-        st.markdown("### Spatiotemporal Gene Expression")
+        st.markdown("### Spatiotemporal RNA Expression")
         # Add RNA time series logic here
 
     with subtab4:
-        st.markdown("### Spatiotemporal Heatmap for RNA and Protein")
-        region = "anterior"
-        rna_avg_df, prot_avg_df = load_spatiotemporal_data(region)
-        
-        st.markdown("### RNA Averaged Expression (Test Preview)")
-        st.dataframe(rna_avg_df.head())
-        
-        st.markdown("### Protein Averaged Expression (Test Preview)")
-        st.dataframe(prot_avg_df.head())
-        
-        # Plot heatmaps
-        st.markdown("### RNA Heatmap")
-        fig_rna, ax_rna = plt.subplots(figsize=(8, 6))
-        sns.heatmap(rna_avg_df, cmap="YlGnBu", ax=ax_rna)
-        st.pyplot(fig_rna)
-        
-        st.markdown("### Protein Heatmap")
-        fig_prot, ax_prot = plt.subplots(figsize=(8, 6))
-        sns.heatmap(prot_avg_df, cmap="PuRd", ax=ax_prot)
-        st.pyplot(fig_prot)
-
-
+        st.markdown("### Spatiotemporal Protein Expression")
+        # Add Protein time series logic here
