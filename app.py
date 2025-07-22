@@ -47,7 +47,7 @@ def load_spatial_data():
 @st.cache_data
 def load_spatiotemporal_data(region):
     rna_url = BASE + f"RNAseq_Spatiotemporal_{region}.csv"
-    prot_url = BASE + f"Protein_Spatiotemporal_{region}.csv"
+    prot_url = BASE + f"Proteomics_Spatiotemporal_{region}.csv"
 
     rna = pd.read_csv(rna_url)
     prot = pd.read_csv(prot_url)
