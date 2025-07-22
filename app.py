@@ -161,7 +161,7 @@ with main_tab1:
                         cbar=False,
                         vmin=vmin_rna,
                         vmax=vmax_rna,
-                        yticklabels=False
+                        yticklabels=True
                     )
                     ax1.set_title("RNA Expression (clustered)", fontsize=14)
                     ax1.set_xlabel("")
