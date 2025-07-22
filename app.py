@@ -122,7 +122,14 @@ with main_tab1:
                 # Only keep genes with any data in RNA
                 rna_avg = rna_avg.dropna(how='all')
                 prot_avg = prot_avg.reindex(rna_avg.index).sort_index()
-        
+                
+                # Check missing genes
+                genes_found = set(rna_avg.index).union(set(prot_avg.index))
+                genes_not_found = [g for g in gene_list if g not in genes_found]
+                
+                if genes_not_found:
+                    st.warning(f"The following genes were not found in either RNA or Protein datasets and will not be shown: {', '.join(genes_not_found)}")
+
                 if rna_avg.empty:
                     st.warning("None of the entered genes were found in the RNA dataset.")
                 else:
