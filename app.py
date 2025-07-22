@@ -83,9 +83,9 @@ def prepare_long_df(df_dict, gene, datatype):
 
 def plot_expression_grid(df, gene_name):
     sns.set(style="whitegrid")
-    fig, axes = plt.subplots(2, 3, figsize=(14, 8), sharex=True)
+    fig, axes = plt.subplots(2, 3, figsize=(16, 10), sharex=True)
 
-    for i, region in enumerate(["Anterior", "Posterior", "Somite"]):
+    for i, region in enumerate(["Posterior", "Anterior", "Somite"]):
         for j, datatype in enumerate(["RNA", "Protein"]):
             ax = axes[j, i]
             sub_df = df[(df['Region'] == region) & (df['Type'] == datatype)]
@@ -109,7 +109,7 @@ def plot_expression_grid(df, gene_name):
                 order=['30', '60', '90', '120'], size=3, jitter=True
             )
 
-            ax.set_title(f"{datatype} - {region}")
+            ax.set_title(f"{region}")
             ax.set_xlabel("")
             ax.set_ylabel("Expression" if i == 0 else "")
 
@@ -118,7 +118,10 @@ def plot_expression_grid(df, gene_name):
             y_pad = (y_max - y_min) * 0.1 if y_max > y_min else 1
             ax.set_ylim(y_min - y_pad, y_max + y_pad)
 
-    fig.suptitle(f"Spatiotemporal Expression of {gene_name}", fontsize=16)
+
+    fig.text(0.06, 0.75, "RNA", va="center", ha="right", fontsize=14, fontweight="bold", rotation=90)
+    fig.text(0.06, 0.25, "Protein", va="center", ha="right", fontsize=14, fontweight="bold", rotation=90)
+    fig.suptitle(f"Spatiotemporal Expression of {gene_name}", fontsize=26)
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     return fig
 
