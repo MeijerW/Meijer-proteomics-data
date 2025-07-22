@@ -231,7 +231,7 @@ with main_tab1:
 
 # ────────── Spatiotemporal Viewer ──────────
 with main_tab2:
-    subtab3, subtab4 = st.tabs(["Single gene", "Heatmap (multiple genes)])
+    subtab3, subtab4 = st.tabs(["Single Gene", "Heatmap (Multiple Genes)"])
 
     with subtab3:
         st.markdown("### Single gene dynamic expression")
