@@ -44,46 +44,33 @@ def load_spatial_data():
     prot['Type'] = 'Protein'
     return rna, prot
 
-def average_replicates(df, prefix="TP_", reps=3):
-    """
-    Given a dataframe with replicate columns like TP_30_REP_1 ... TP_30_REP_n,
-    average replicates per timepoint and return a DataFrame with columns as timepoints.
-    """
-    timepoints = [30, 60, 90, 120]
-    averaged_data = {}
-    
-    for tp in timepoints:
-        rep_cols = [f"{prefix}{tp}_REP_{i+1}" for i in range(reps)]
-        # Some replicates might not exist, so filter cols that are in df
-        rep_cols = [col for col in rep_cols if col in df.columns]
-        if rep_cols:
-            averaged_data[f"{tp}min"] = df[rep_cols].mean(axis=1)
-        else:
-            # No data for this timepoint, fill with NaNs
-            averaged_data[f"{tp}min"] = np.nan
-
-    return pd.DataFrame(averaged_data, index=df.index)
-
-
-# Load spatiotemporal data
-
 @st.cache_data
 def load_spatiotemporal_data(region):
-    rna_url = SPATIOTEMPORAL_RNA_TEMPLATE.format(region)
-    prot_url = SPATIOTEMPORAL_PROT_TEMPLATE.format(region)
-    
-    # Read CSV instead of TSV
-    rna = pd.read_csv(rna_url)  # no sep="\t" needed for CSV
+    rna_url = BASE + f"RNAseq_Spatiotemporal_{region}.csv"
+    prot_url = BASE + f"Protein_Spatiotemporal_{region}.csv"
+
+    rna = pd.read_csv(rna_url)
     prot = pd.read_csv(prot_url)
-    
-    rna.set_index("ID", inplace=True)
-    prot.set_index("ID", inplace=True)
-    
-    # Average replicates (RNA 3 reps, Protein 4 reps)
-    rna_avg = average_replicates(rna, reps=3)
-    prot_avg = average_replicates(prot, reps=4)
-    
-    return rna_avg, prot_avg, rna, prot
+
+    rna_expression = rna.filter(like="TP")
+    prot_expression = prot.filter(like="TP")
+
+    # Average replicates for RNA
+    rna_avg = rna_expression.groupby(
+        rna_expression.columns.str.extract(r"TP_(\d+)_REP_\d+")[0],
+        axis=1
+    ).mean()
+    rna_avg["ID"] = rna["ID"]
+
+    # Average replicates for Protein
+    prot_avg = prot_expression.groupby(
+        prot_expression.columns.str.extract(r"TP_(\d+)_REP_\d+")[0],
+        axis=1
+    ).mean()
+    prot_avg["ID"] = prot["ID"]
+
+    return rna_avg.set_index("ID"), prot_avg.set_index("ID")
+
 
 # Load spatial data immediately
 rna_df, prot_df = load_spatial_data()
@@ -287,35 +274,24 @@ with main_tab2:
 
     with subtab4:
         st.markdown("### Spatiotemporal Heatmap for RNA and Protein")
-     # Load static region to test (e.g., anterior)
-        test_region = "anterior"
+        region = "anterior"
+        rna_avg_df, prot_avg_df = load_spatiotemporal_data(region)
         
-        # Construct URLs to CSVs on GitHub
-        rna_url = BASE + f"RNAseq_Spatiotemporal_{test_region}.csv"
-        prot_url = BASE + f"Protein_Spatiotemporal_{test_region}.csv"
-    
-        try:
-            rna = pd.read_csv(rna_url)
-            prot = pd.read_csv(prot_url)
-            
-            # Index by gene ID
-            rna.set_index("ID", inplace=True)
-            prot.set_index("ID", inplace=True)
-    
-            # Select only timepoint columns for heatmap
-            rna_tp_cols = [col for col in rna.columns if "TP_" in col]
-            prot_tp_cols = [col for col in prot.columns if "TP_" in col]
-    
-            # Create heatmaps
-            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 14))
-    
-            sns.heatmap(rna[rna_tp_cols], cmap="YlGnBu", ax=ax1, cbar_kws={"label": "Expression"})
-            ax1.set_title("RNA Expression - Anterior (Raw)")
-    
-            sns.heatmap(prot[prot_tp_cols], cmap="BuPu", ax=ax2, cbar_kws={"label": "Expression"})
-            ax2.set_title("Protein Expression - Anterior (Raw)")
-    
-            st.pyplot(fig)
-    
-        except Exception as e:
-            st.error(f"Failed to load heatmaps: {e}")
+        st.markdown("### RNA Averaged Expression (Test Preview)")
+        st.dataframe(rna_avg_df.head())
+        
+        st.markdown("### Protein Averaged Expression (Test Preview)")
+        st.dataframe(prot_avg_df.head())
+        
+        # Plot heatmaps
+        st.markdown("### RNA Heatmap")
+        fig_rna, ax_rna = plt.subplots(figsize=(8, 6))
+        sns.heatmap(rna_avg_df, cmap="YlGnBu", ax=ax_rna)
+        st.pyplot(fig_rna)
+        
+        st.markdown("### Protein Heatmap")
+        fig_prot, ax_prot = plt.subplots(figsize=(8, 6))
+        sns.heatmap(prot_avg_df, cmap="PuRd", ax=ax_prot)
+        st.pyplot(fig_prot)
+
+
