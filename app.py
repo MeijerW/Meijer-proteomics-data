@@ -46,15 +46,18 @@ def load_spatial_data():
 
 @st.cache_data
 def load_spatiotemporal_data(region):
-    rna_url = BASE + f"RNAseq_Spatiotemporal_{region}.csv"
-    prot_url = BASE + f"Proteomics_Spatiotemporal_{region}.csv"
+    st_rna_url = BASE + f"RNAseq_Spatiotemporal_{region}.csv"
+    st_prot_url = BASE + f"Proteomics_Spatiotemporal_{region}.csv"
 
-    rna = pd.read_csv(rna_url)
-    prot = pd.read_csv(prot_url)
-
-    rna_expression = rna.filter(like="TP")
-    prot_expression = prot.filter(like="TP")
-
+    st_rna = pd.read_csv(st_rna_url)
+    st_prot = pd.read_csv(st_prot_url)
+    st_rna['Type'] = 'RNA'
+    st_prot['Type'] = 'Protein'
+    
+    rna_expression = st_rna.filter(like="TP")
+    prot_expression = st_prot.filter(like="TP")
+    print (rna_expression, prot_expression)
+    
     # Average replicates for RNA
     rna_avg = rna_expression.groupby(
         rna_expression.columns.str.extract(r"TP_(\d+)_REP_\d+")[0],
