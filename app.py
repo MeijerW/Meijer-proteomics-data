@@ -110,8 +110,9 @@ def plot_expression_grid(df, gene_name):
             )
 
             ax.set_title(f"{region}", fontsize=20)
+            ax.tick_params(axis='both', labelsize=18)
             ax.set_xlabel("")
-            ax.set_ylabel("Expression" if i == 0 else "")
+            ax.set_ylabel("Expression" if i == 0 else "", fontsize=18)
 
             # Dynamic y-limit
             y_min, y_max = sub_df["Expression"].min(), sub_df["Expression"].max()
@@ -119,7 +120,7 @@ def plot_expression_grid(df, gene_name):
             ax.set_ylim(y_min - y_pad, y_max + y_pad)
 
 
-    fig.text(0.01, 0.6, "RNA", va="center", ha="right", fontsize=20, fontweight="bold", rotation=90)
+    fig.text(0.01, 0.65, "RNA", va="center", ha="right", fontsize=20, fontweight="bold", rotation=90)
     fig.text(0.01, 0.23, "Protein", va="center", ha="right", fontsize=20, fontweight="bold", rotation=90)
     fig.suptitle(f"Spatiotemporal Expression of {gene_name}", fontsize=26)
     fig.tight_layout(rect=[0, 0, 1, 0.95])
