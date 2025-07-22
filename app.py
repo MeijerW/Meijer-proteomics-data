@@ -101,7 +101,7 @@ with main_tab1:
                 st.download_button(
                     label="📥 Download this figure as PNG",
                     data=buf,
-                    file_name= (gene_input + "spatial_boxplot.png"),
+                    file_name= (gene_input + "_spatial_boxplot.png"),
                     mime="image/png"
 )
     # Heatmap Tab 
