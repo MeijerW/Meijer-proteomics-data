@@ -33,7 +33,7 @@ PROT_URL = BASE + "Protein_preprocessed.csv"
 SPATIOTEMPORAL_REGIONS = ["anterior", "posterior", "somite"]
 
 SPATIOTEMPORAL_RNA_TEMPLATE = BASE + "RNAseq_Spatiotemporal_{}.csv"
-SPATIOTEMPORAL_PROT_TEMPLATE = BASE + "Protein_Spatiotemporal_{}.csv"
+SPATIOTEMPORAL_PROT_TEMPLATE = BASE + "Proteomics_Spatiotemporal_{}.csv"
 
 # Load spatial data
 @st.cache_data
