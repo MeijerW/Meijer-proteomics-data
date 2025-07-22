@@ -122,9 +122,9 @@ with main_tab1:
                 rna_avg = rna_avg.reindex(columns=expected_regions)
                 prot_avg = prot_avg.reindex(columns=expected_regions)
             
-                all_genes_found = set(rna_avg.index).union(set(prot_avg.index))
-                rna_avg = rna_avg.reindex(all_genes_found).sort_index()
-                prot_avg = prot_avg.reindex(all_genes_found).sort_index()
+                common_genes = rna_avg.index.intersection(prot_avg.index)
+                rna_avg = rna_avg.loc[common_genes]
+                prot_avg = prot_avg.loc[common_genes]
             
                 if rna_avg.empty and prot_avg.empty:
                     st.warning("None of the entered genes were found in either dataset.")
@@ -185,7 +185,7 @@ with main_tab1:
                             col_cluster=False,
                             cbar_pos=None
                         )
-                        gene_order = [cluster_df.index[i] for i in g.dendrogram_row.reordered_ind]
+                        gene_order = g.data.index.tolist()
                         plt.close()
             
                         cluster_ordered = cluster_df.loc[gene_order]
