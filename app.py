@@ -231,12 +231,12 @@ with main_tab1:
 
 # ────────── Spatiotemporal Viewer ──────────
 with main_tab2:
-    subtab3, subtab4 = st.tabs(["RNA Time Series", "Protein Time Series"])
+    subtab3, subtab4 = st.tabs(["Single gene dynamics", "Multi-gene heatmap"])
 
     with subtab3:
-        st.markdown("### Spatiotemporal RNA Expression")
+        st.markdown("### Spatiotemporal Gene Expression")
         # Add RNA time series logic here
 
     with subtab4:
-        st.markdown("### Spatiotemporal Protein Expression")
+        st.markdown("### Spatiotemporal Heatmap for RNA and protein")
         # Add Protein time series logic here
