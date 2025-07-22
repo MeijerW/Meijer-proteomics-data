@@ -161,7 +161,7 @@ with main_tab1:
                         cbar=False,
                         vmin=vmin_rna,
                         vmax=vmax_rna,
-                        yticklabels=True
+                        yticklabels=False
                     )
                     ax1.set_title("RNA Expression (clustered)", fontsize=14)
                     ax1.set_xlabel("")
@@ -175,7 +175,7 @@ with main_tab1:
                         cbar=False,
                         vmin=vmin_prot,
                         vmax=vmax_prot,
-                        yticklabels=False
+                        yticklabels=True
                     )
                     ax2.set_title("Protein Expression", fontsize=14)
                     ax2.set_xlabel("")
