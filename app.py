@@ -320,7 +320,7 @@ with main_tab2:
 
     with subtab3:
         st.markdown("### Single gene dynamic expression")
-
+        rna_dict, prot_dict = load_spatiotemporal_data()
         # Input gene
         gene_input = st.text_input("Enter gene name:", value="Lfng")
         
