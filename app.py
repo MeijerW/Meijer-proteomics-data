@@ -119,8 +119,8 @@ def plot_expression_grid(df, gene_name):
             ax.set_ylim(y_min - y_pad, y_max + y_pad)
 
 
-    fig.text(0.06, 0.75, "RNA", va="center", ha="right", fontsize=14, fontweight="bold", rotation=90)
-    fig.text(0.06, 0.25, "Protein", va="center", ha="right", fontsize=14, fontweight="bold", rotation=90)
+    fig.text(0.01, 0.7, "RNA", va="center", ha="right", fontsize=14, fontweight="bold", rotation=90)
+    fig.text(0.01, 0.24, "Protein", va="center", ha="right", fontsize=14, fontweight="bold", rotation=90)
     fig.suptitle(f"Spatiotemporal Expression of {gene_name}", fontsize=26)
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     return fig
@@ -337,7 +337,19 @@ with main_tab2:
             else:
                 fig = plot_expression_grid(combined_df, gene_input)
                 st.pyplot(fig)
-    
+            
+            # Save figure to a BytesIO buffer
+            buf = io.BytesIO()
+            fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
+            buf.seek(0)
+
+            # Download button
+            st.download_button(
+                label="📥 Download this figure as PNG",
+                data=buf,
+                file_name=f"{gene_input}_spatiotemporal_expression.png",
+                mime="image/png"
+            )
    
 
     with subtab4:
