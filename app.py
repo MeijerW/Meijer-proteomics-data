@@ -167,7 +167,7 @@ with main_tab1:
                     ax1.set_xlabel("")
                     ax1.set_ylabel("")
                     ax1.set_yticklabels(rna_ordered.index, rotation=0)
-        
+                    
                     sns.heatmap(
                         prot_ordered,
                         cmap="viridis",
@@ -175,11 +175,14 @@ with main_tab1:
                         cbar=False,
                         vmin=vmin_prot,
                         vmax=vmax_prot,
-                        yticklabels=False
+                        yticklabels=True  # <--- Changed here
                     )
                     ax2.set_title("Protein Expression", fontsize=14)
                     ax2.set_xlabel("")
                     ax2.set_ylabel("")
+                    ax2.yaxis.tick_right()
+                    ax2.yaxis.set_label_position("right")
+                    ax2.set_yticklabels(prot_ordered.index, rotation=0)
         
                     # Colorbars
                     sm_rna = plt.cm.ScalarMappable(cmap="viridis", norm=plt.Normalize(vmin=vmin_rna, vmax=vmax_rna))
