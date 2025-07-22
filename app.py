@@ -25,20 +25,36 @@ prot_palette = {
     "anterior": "#b2b2d9",
     "somite": "#d7d6ea"
 }
-
-# Load data once, use throughout
+# Spatial data files
 RNA_URL = BASE + "RNA_preprocessed.csv"
 PROT_URL = BASE + "Protein_preprocessed.csv"
 
+# Spatiotemporal file templates
+SPATIOTEMPORAL_REGIONS = ["anterior", "posterior", "somite"]
+
+SPATIOTEMPORAL_RNA_TEMPLATE = BASE + "RNAseq_Spatiotemporal_{}.tsv"
+SPATIOTEMPORAL_PROT_TEMPLATE = BASE + "Proteomics_Spatiotemporal_{}.tsv"
+
+# Load spatial data
 @st.cache_data
-def load_data():
+def load_spatial_data():
     rna = pd.read_csv(RNA_URL)
     prot = pd.read_csv(PROT_URL)
     rna['Type'] = 'RNA'
     prot['Type'] = 'Protein'
     return rna, prot
 
-rna_df, prot_df = load_data()
+# Load spatiotemporal data
+@st.cache_data
+def load_spatiotemporal_data(region):
+    rna_url = SPATIOTEMPORAL_RNA_TEMPLATE.format(region)
+    prot_url = SPATIOTEMPORAL_PROT_TEMPLATE.format(region)
+    rna = pd.read_csv(rna_url, sep="\t")
+    prot = pd.read_csv(prot_url, sep="\t")
+    return rna, prot
+
+# Load spatial data immediately
+rna_df, prot_df = load_spatial_data()
 rna_df['group'] = rna_df['group'].str.lower()
 prot_df['group'] = prot_df['group'].str.lower()
 
@@ -238,5 +254,88 @@ with main_tab2:
         # Add RNA time series logic here
 
     with subtab4:
-        st.markdown("### Spatiotemporal Heatmap for RNA and protein")
-        # Add Protein time series logic here
+        st.markdown("### Spatiotemporal Heatmap for RNA and Protein")
+
+        region = st.selectbox("Select Region", SPATIOTEMPORAL_REGIONS)
+        gene_input = st.text_input("Enter gene names (comma-separated)", value="")
+        meta_option = st.selectbox("Select metadata to display", ["P_VALUE", "PERIOD", "LAG"])
+
+        if gene_input:
+            gene_list = [g.strip().lower() for g in gene_input.split(",") if g.strip()]
+
+            # Load spatiotemporal data
+            rna_temp_df, prot_temp_df = load_spatiotemporal_data(region)
+            rna_temp_df["ID"] = rna_temp_df["ID"].str.lower()
+            prot_temp_df["ID"] = prot_temp_df["ID"].str.lower()
+
+            rna_subset = rna_temp_df[rna_temp_df["ID"].isin(gene_list)]
+            prot_subset = prot_temp_df[prot_temp_df["ID"].isin(gene_list)]
+
+            found_genes = set(rna_subset["ID"]).union(prot_subset["ID"])
+            not_found_genes = [g for g in gene_list if g not in found_genes]
+            if not_found_genes:
+                st.info(f"Genes not found: {', '.join(not_found_genes)}")
+
+            if rna_subset.empty and prot_subset.empty:
+                st.warning("None of the selected genes were found in this region.")
+            else:
+                # Timepoint columns
+                tp_cols = [col for col in rna_temp_df.columns if col.startswith("TP_")]
+                timepoints = sorted(set(col.split("_")[1] for col in tp_cols), key=int)
+
+                def compute_zscores(df, cols):
+                    expr = df.set_index("ID")[cols]
+                    # Average per timepoint
+                    avg_df = pd.DataFrame(index=expr.index)
+                    for tp in timepoints:
+                        reps = [c for c in expr.columns if f"TP_{tp}_" in c]
+                        avg_df[tp] = expr[reps].mean(axis=1)
+                    zscore = StandardScaler().fit_transform(avg_df)
+                    return pd.DataFrame(zscore, index=avg_df.index, columns=avg_df.columns)
+
+                rna_z = compute_zscores(rna_subset, tp_cols) if not rna_subset.empty else pd.DataFrame()
+                prot_z = compute_zscores(prot_subset, tp_cols) if not prot_subset.empty else pd.DataFrame()
+
+                all_genes = sorted(set(rna_z.index).union(prot_z.index))
+                rna_z = rna_z.reindex(all_genes)
+                prot_z = prot_z.reindex(all_genes)
+
+                def extract_metadata(df, field):
+                    return pd.DataFrame({field: df.set_index("ID")[field].reindex(all_genes)})
+
+                rna_meta = extract_metadata(rna_subset, meta_option)
+                prot_meta = extract_metadata(prot_subset, meta_option)
+
+                # Plot
+                fig = plt.figure(figsize=(16, len(all_genes) * 0.4 + 3))
+                gs = gridspec.GridSpec(2, 4, height_ratios=[20, 1], width_ratios=[10, 1.5, 10, 1.5], hspace=0.4, wspace=0.3)
+
+                # RNA heatmap + meta
+                ax1 = fig.add_subplot(gs[0, 0])
+                ax1_meta = fig.add_subplot(gs[0, 1], sharey=ax1)
+                ax1_cb = fig.add_subplot(gs[1, 0])
+                ax1_meta.set_title(f"{meta_option} (RNA)", fontsize=10)
+
+                if not rna_z.empty:
+                    sns.heatmap(rna_z, cmap="viridis", ax=ax1, cbar=False, yticklabels=True)
+                    sm = plt.cm.ScalarMappable(cmap="viridis", norm=plt.Normalize(vmin=rna_z.min().min(), vmax=rna_z.max().max()))
+                    fig.colorbar(sm, cax=ax1_cb, orientation='horizontal').set_label("RNA Z-score")
+
+                if not rna_meta.empty:
+                    sns.heatmap(rna_meta, cmap="coolwarm", annot=True, fmt=".2f", cbar=False, ax=ax1_meta, yticklabels=False)
+
+                # Protein heatmap + meta
+                ax2 = fig.add_subplot(gs[0, 2], sharey=ax1)
+                ax2_meta = fig.add_subplot(gs[0, 3], sharey=ax1)
+                ax2_cb = fig.add_subplot(gs[1, 2])
+                ax2_meta.set_title(f"{meta_option} (Protein)", fontsize=10)
+
+                if not prot_z.empty:
+                    sns.heatmap(prot_z, cmap="viridis", ax=ax2, cbar=False, yticklabels=False)
+                    sm2 = plt.cm.ScalarMappable(cmap="viridis", norm=plt.Normalize(vmin=prot_z.min().min(), vmax=prot_z.max().max()))
+                    fig.colorbar(sm2, cax=ax2_cb, orientation='horizontal').set_label("Protein Z-score")
+
+                if not prot_meta.empty:
+                    sns.heatmap(prot_meta, cmap="coolwarm", annot=True, fmt=".2f", cbar=False, ax=ax2_meta, yticklabels=False)
+
+                st.pyplot(fig)
