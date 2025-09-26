@@ -184,46 +184,90 @@ def prepare_heatmap_matrix(df_dict, gene_list, region):
     avg.columns.name = None
     return avg
 
+def zscore_matrix(df):
+    return df.sub(df.mean(axis=1), axis=0).div(df.std(axis=1), axis=0)
 
-def plot_heatmaps(rna_matrix, prot_matrix, region, gene_list):
-    # Decide gene order (RNA primary, otherwise protein)
+def prepare_pval_matrix(df_dict, gene_list, region):
+    df = df_dict[region].copy()
+    df.index = df.index.astype(str).str.strip().str.lower()
+    gene_idx = [g for g in gene_list if g in df.index]
+    if not gene_idx:
+        return pd.DataFrame()
+    pvals = df.loc[gene_idx, "P_VALUE"]
+    return pd.DataFrame({"p-value": pvals})
+
+def plot_heatmaps(rna_matrix, prot_matrix, rna_pvals, prot_pvals, region, gene_list):
+    # Gene order is taken from RNA if available, else protein
     if not rna_matrix.empty:
         genes_order = list(rna_matrix.index)
     else:
         genes_order = list(prot_matrix.index)
 
+    # Reindex all matrices consistently
     rna_matrix = rna_matrix.reindex(genes_order)
     prot_matrix = prot_matrix.reindex(genes_order)
+    rna_pvals = rna_pvals.reindex(genes_order)
+    prot_pvals = prot_pvals.reindex(genes_order)
 
-    fig = plt.figure(figsize=(12, max(3, len(genes_order) * 0.35)))
-    gs = gridspec.GridSpec(1, 2, width_ratios=[1, 1], wspace=0.05)
-
-    ax1 = fig.add_subplot(gs[0, 0])
-    ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)
-
+    # Z-score normalization
     if not rna_matrix.empty:
-        vmin_rna, vmax_rna = np.nanmin(rna_matrix.values), np.nanmax(rna_matrix.values)
-        sns.heatmap(rna_matrix, cmap="viridis", ax=ax1, cbar=True,
-                    vmin=vmin_rna, vmax=vmax_rna, yticklabels=True)
-        ax1.set_title("RNA Expression")
+        rna_matrix = zscore_matrix(rna_matrix)
+    if not prot_matrix.empty:
+        prot_matrix = zscore_matrix(prot_matrix)
+
+    # Figure with 2 rows × 2 cols
+    fig = plt.figure(figsize=(14, max(3, len(genes_order) * 0.4)))
+    gs = gridspec.GridSpec(2, 2, width_ratios=[3, 1], height_ratios=[1, 1], wspace=0.05, hspace=0.25)
+
+    # --- RNA expression ---
+    ax1 = fig.add_subplot(gs[0, 0])
+    if not rna_matrix.empty:
+        sns.heatmap(rna_matrix, cmap="vlag", ax=ax1, cbar=True,
+                    center=0, vmin=-2, vmax=2, yticklabels=True)
+        ax1.set_title("RNA Expression (z-score)")
         ax1.set_xlabel("Time (min)")
         ax1.set_ylabel("Genes")
     else:
         ax1.axis("off")
         ax1.set_title("No RNA data")
 
-    if not prot_matrix.empty:
-        vmin_prot, vmax_prot = np.nanmin(prot_matrix.values), np.nanmax(prot_matrix.values)
-        sns.heatmap(prot_matrix, cmap="viridis", ax=ax2, cbar=True,
-                    vmin=vmin_prot, vmax=vmax_prot, yticklabels=True)
-        ax2.set_title("Protein Expression")
-        ax2.set_xlabel("Time (min)")
-        ax2.yaxis.tick_right()
+    # --- RNA p-values ---
+    ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)
+    if not rna_pvals.empty:
+        sns.heatmap(rna_pvals, cmap="Reds_r", annot=True, fmt=".5f",
+                    cbar=False, ax=ax2, yticklabels=False)
+        ax2.set_title("RNA p-values")
+        ax2.set_xlabel("")
+        ax2.set_ylabel("")
     else:
         ax2.axis("off")
-        ax2.set_title("No Protein data")
+        ax2.set_title("No RNA p-values")
 
-    fig.suptitle(f"{region} Spatiotemporal Heatmaps", fontsize=16, fontweight="bold")
+    # --- Protein expression ---
+    ax3 = fig.add_subplot(gs[1, 0])
+    if not prot_matrix.empty:
+        sns.heatmap(prot_matrix, cmap="vlag", ax=ax3, cbar=True,
+                    center=0, vmin=-2, vmax=2, yticklabels=True)
+        ax3.set_title("Protein Expression (z-score)")
+        ax3.set_xlabel("Time (min)")
+        ax3.set_ylabel("Genes")
+    else:
+        ax3.axis("off")
+        ax3.set_title("No Protein data")
+
+    # --- Protein p-values ---
+    ax4 = fig.add_subplot(gs[1, 1], sharey=ax3)
+    if not prot_pvals.empty:
+        sns.heatmap(prot_pvals, cmap="Reds_r", annot=True, fmt=".5f",
+                    cbar=False, ax=ax4, yticklabels=False)
+        ax4.set_title("Protein p-values")
+        ax4.set_xlabel("")
+        ax4.set_ylabel("")
+    else:
+        ax4.axis("off")
+        ax4.set_title("No Protein p-values")
+
+    fig.suptitle(f"{region} Spatiotemporal Heatmaps", fontsize=18, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     return fig
 
