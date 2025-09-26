@@ -631,7 +631,6 @@ with main_tab2:
                 # Turn off gene labels for all except left RNA heatmap
                 ax_rna_pval.set_yticklabels([])
                 ax_prot.set_yticklabels([])
-                ax_prot_pval.set_yticklabels([])
     
                 # Supertitle above plots
                 fig.suptitle(f"{region_choice_multi} Spatiotemporal Heatmaps",
