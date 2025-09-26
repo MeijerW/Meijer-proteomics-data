@@ -54,17 +54,20 @@ def load_data():
 
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 
-# Create a custom colormap for p-values
+from matplotlib.colors import LinearSegmentedColormap, Normalize
+
 def create_pval_cmap():
-    colors = ["white", "#FFC0CB", "#800080"]  # white → pink → purple
+    # White → pink → purple
+    colors = ["white", "#FFC0CB", "#800080"]
     cmap = LinearSegmentedColormap.from_list("pval_cmap", colors)
     return cmap
 
-# Create a norm that flips the scale: lower p-values (more significant) -> darker
 def create_pval_norm(pvals):
-    # Clip maximum p-value at 0.05
-    max_p = 0.05
-    norm = Normalize(vmin=0, vmax=max_p, clip=True)
+    """
+    Clip p-values at 0.05. All p > 0.05 will map to white.
+    """
+    max_sig = 0.05
+    norm = Normalize(vmin=0, vmax=max_sig, clip=True)
     return norm
 
 @st.cache_data
@@ -565,72 +568,94 @@ with main_tab2:
                     rna_matrix = zscore_matrix(rna_matrix)
                 if not prot_matrix.empty:
                     prot_matrix = zscore_matrix(prot_matrix)
-    
-                # Figure layout
-                fig = plt.figure(figsize=(12, max(3, len(gene_order) * 0.5)))
-                gs = gridspec.GridSpec(3, 2, width_ratios=[4, 1], height_ratios=[1, 1, 0.2],
-                                       wspace=0.3, hspace=0.4)
+                    
+                # --- Layout ---
+                fig = plt.figure(figsize=(16, max(3, len(gene_order) * 0.5)))
+                gs = gridspec.GridSpec(2, 4, height_ratios=[1, 0.05], width_ratios=[4, 1, 4, 1],
+                                       wspace=0.05, hspace=0.3)
                 
-                # Heatmaps
-                ax1 = fig.add_subplot(gs[0, 0])  # RNA expression
-                ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)  # RNA p-values
-                ax3 = fig.add_subplot(gs[1, 0])  # Protein expression
-                ax4 = fig.add_subplot(gs[1, 1], sharey=ax3)  # Protein p-values
+                # --- Top row heatmaps ---
+                ax_rna = fig.add_subplot(gs[0, 0])
+                ax_rna_pval = fig.add_subplot(gs[0, 1], sharey=ax_rna)
+                ax_prot = fig.add_subplot(gs[0, 2], sharey=ax_rna)
+                ax_prot_pval = fig.add_subplot(gs[0, 3], sharey=ax_rna)
                 
-                # Colorbar axes
-                cax_rna = fig.add_subplot(gs[2, 0])
-                cax_prot = fig.add_subplot(gs[2, 1])
+                # --- Bottom row colorbars ---
+                cax_rna = fig.add_subplot(gs[1, 0])
+                cax_rna_pval = fig.add_subplot(gs[1, 1])
+                cax_prot = fig.add_subplot(gs[1, 2])
+                cax_prot_pval = fig.add_subplot(gs[1, 3])
                 
-                # --- RNA expression heatmap ---
+                # --- RNA heatmap ---
                 if not rna_matrix.empty:
-                    sns.heatmap(rna_matrix, cmap="viridis", ax=ax1, cbar=True, center=0, vmin=-2, vmax=2, yticklabels=True)
-                    ax1.set_title("RNA Expression (z-score)", fontsize=14, pad=12)
-                    ax1.set_xlabel("Time", fontsize=12)
-                    ax1.set_ylabel("Genes", fontsize=12)
+                    sns.heatmap(rna_matrix, cmap="viridis", ax=ax_rna, cbar=False,
+                                vmin=-2, vmax=2, yticklabels=True)
+                    ax_rna.set_title("RNA Expression", fontsize=14, pad=12)
+                    ax_rna.set_xlabel("Time", fontsize=12)
+                    ax_rna.set_ylabel("Genes", fontsize=12)
                 else:
-                    ax1.axis("off")
+                    ax_rna.axis("off")
                 
                 # --- RNA p-value heatmap ---
                 if not rna_pvals.empty:
-                    pval_cmap = create_pval_cmap()
-                    norm = create_pval_norm(rna_pvals.values)
-                    sns.heatmap(rna_pvals, cmap=pval_cmap, annot=True, fmt=".3f",
-                                cbar=False, ax=ax2, yticklabels=False, norm=norm)
-                    ax2.set_title("RNA p-values", fontsize=14, pad=12)
-                    # Add horizontal colorbar below
-                    sm_rna = plt.cm.ScalarMappable(cmap=pval_cmap, norm=norm)
-                    sm_rna.set_array([])
-                    fig.colorbar(sm_rna, cax=cax_rna, orientation='horizontal', label="RNA p-value")
+                    norm_rna = create_pval_norm(rna_pvals.values)
+                    sns.heatmap(rna_pvals, cmap=create_pval_cmap(), annot=True, fmt=".3f",
+                                cbar=False, ax=ax_rna_pval, yticklabels=False, norm=norm_rna)
+                    ax_rna_pval.set_title("RNA p-values", fontsize=14, pad=12)
                 else:
-                    ax2.axis("off")
-                    cax_rna.axis("off")
+                    ax_rna_pval.axis("off")
                 
-                # --- Protein expression heatmap ---
+                # --- Protein heatmap ---
                 if not prot_matrix.empty:
-                    sns.heatmap(prot_matrix, cmap="viridis", ax=ax3, cbar=True, center=0, vmin=-2, vmax=2, yticklabels=True)
-                    ax3.set_title("Protein Expression (z-score)", fontsize=14, pad=12)
-                    ax3.set_xlabel("Time", fontsize=12)
-                    ax3.set_ylabel("Genes", fontsize=12)
+                    sns.heatmap(prot_matrix, cmap="viridis", ax=ax_prot, cbar=False,
+                                vmin=-2, vmax=2, yticklabels=False)  # Gene labels only on left-most
+                    ax_prot.set_title("Protein Expression", fontsize=14, pad=12)
+                    ax_prot.set_xlabel("Time", fontsize=12)
                 else:
-                    ax3.axis("off")
+                    ax_prot.axis("off")
                 
                 # --- Protein p-value heatmap ---
                 if not prot_pvals.empty:
-                    pval_cmap = create_pval_cmap()
-                    norm = create_pval_norm(prot_pvals.values)
-                    sns.heatmap(prot_pvals, cmap=pval_cmap, annot=True, fmt=".3f",
-                                cbar=False, ax=ax4, yticklabels=False, norm=norm)
-                    ax4.set_title("Protein p-values", fontsize=14, pad=12)
-                    sm_prot = plt.cm.ScalarMappable(cmap=pval_cmap, norm=norm)
-                    sm_prot.set_array([])
-                    fig.colorbar(sm_prot, cax=cax_prot, orientation='horizontal', label="Protein p-value")
+                    norm_prot = create_pval_norm(prot_pvals.values)
+                    sns.heatmap(prot_pvals, cmap=create_pval_cmap(), annot=True, fmt=".3f",
+                                cbar=False, ax=ax_prot_pval, yticklabels=False, norm=norm_prot)
+                    ax_prot_pval.set_title("Protein p-values", fontsize=14, pad=12)
                 else:
-                    ax4.axis("off")
-                    cax_prot.axis("off")
-
+                    ax_prot_pval.axis("off")
+                
+                # --- Colorbars ---
+                if not rna_matrix.empty:
+                    sm_rna = plt.cm.ScalarMappable(cmap="viridis", norm=plt.Normalize(vmin=-2, vmax=2))
+                    sm_rna.set_array([])
+                    fig.colorbar(sm_rna, cax=cax_rna, orientation='horizontal', label="Z-score (RNA)")
+                
+                if not rna_pvals.empty:
+                    sm_rna_pval = plt.cm.ScalarMappable(cmap=create_pval_cmap(), norm=norm_rna)
+                    sm_rna_pval.set_array([])
+                    fig.colorbar(sm_rna_pval, cax=cax_rna_pval, orientation='horizontal', label="p-value (RNA)")
+                
+                if not prot_matrix.empty:
+                    sm_prot = plt.cm.ScalarMappable(cmap="viridis", norm=plt.Normalize(vmin=-2, vmax=2))
+                    sm_prot.set_array([])
+                    fig.colorbar(sm_prot, cax=cax_prot, orientation='horizontal', label="Z-score (Protein)")
+                
+                if not prot_pvals.empty:
+                    sm_prot_pval = plt.cm.ScalarMappable(cmap=create_pval_cmap(), norm=norm_prot)
+                    sm_prot_pval.set_array([])
+                    fig.colorbar(sm_prot_pval, cax=cax_prot_pval, orientation='horizontal', label="p-value (Protein)")
+                
+                # --- Final layout ---
+                ax_rna.set_yticklabels(rna_matrix.index, rotation=0)  # Gene labels on left-most axis
+                ax_rna.tick_params(left=True)
+                ax_rna_pval.tick_params(left=False)
+                ax_prot.tick_params(left=False)
+                ax_prot_pval.tick_params(left=False)
+                
+                fig.suptitle(f"{region_choice_multi} Spatiotemporal Heatmaps", fontsize=18, fontweight="bold")
+                fig.tight_layout(rect=[0, 0, 1, 0.95])
                 st.pyplot(fig)
-    
-                # Download button
+
+                    # Download button
                 buf = io.BytesIO()
                 fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
                 buf.seek(0)
