@@ -142,6 +142,7 @@ def plot_expression_grid(df, gene_name, region):
                 ha="right", va="top",
                 transform=ax.transAxes,
                 fontsize=12, color="red", fontweight="bold"
+            )
 
     fig.suptitle(f"{region} Spatiotemporal Expression of {gene_name}", fontsize=20, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.95])
