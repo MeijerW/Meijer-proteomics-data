@@ -487,7 +487,7 @@ with main_tab2:
         st.markdown("### Multi-gene Spatiotemporal Expression")
     
         # Dropdown for region
-        region_choice = st.selectbox("Select region", ["Posterior", "Anterior", "Somite"])
+        region_choice_multi = st.selectbox("Select region", ["Posterior", "Anterior", "Somite"])
     
         # Input genes
         gene_input = st.text_input("Enter genes (comma-separated):", value="")
@@ -495,13 +495,13 @@ with main_tab2:
             gene_list = [g.strip().lower() for g in gene_input.split(",") if g.strip()]
     
             rna_dict, prot_dict = load_spatiotemporal_data()
-            rna_matrix = prepare_heatmap_matrix(rna_dict, gene_list, region_choice, "RNA")
-            prot_matrix = prepare_heatmap_matrix(prot_dict, gene_list, region_choice, "Protein")
-    
+            rna_matrix = prepare_heatmap_matrix(rna_dict, gene_list, region_choice_multi, "RNA")
+            prot_matrix = prepare_heatmap_matrix(prot_dict, gene_list, region_choice_multi, "Protein")
+            
             if rna_matrix.empty and prot_matrix.empty:
-                st.warning(f"No data found for the entered genes in {region_choice}.")
+                st.warning(f"No data found for the entered genes in {region_choice_multi}.")
             else:
-                fig = plot_heatmaps(rna_matrix, prot_matrix, region_choice, gene_list)
+                fig = plot_heatmaps(rna_matrix, prot_matrix, region_choice_multi, gene_list)
                 st.pyplot(fig)
     
                 # Save/download
