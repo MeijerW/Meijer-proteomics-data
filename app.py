@@ -65,20 +65,21 @@ def load_spatiotemporal_data():
     return load_files(RNA_FILES), load_files(PROT_FILES)
 
 def prepare_long_df(df_dict, gene, datatype):
-    gene = gene.strip().lower()  # normalize input
+    gene = gene.strip().lower()
     all_data = []
     for region, df in df_dict.items():
-        # normalize dataframe index
         df.index = df.index.astype(str).str.strip().str.lower()
 
         if gene not in df.index:
             continue
 
-        row = df.loc[gene].filter(like='TP_')
-        melted = row.reset_index()
+        row = df.loc[gene]
+        pval = row["P_VALUE"] if "P_VALUE" in row.index else np.nan  # grab p-value if present
+
+        expression = row.filter(like='TP_')
+        melted = expression.reset_index()
         melted.columns = ['Condition', 'Expression']
 
-        # Extract time and replicate info
         melted['Time'] = melted['Condition'].str.extract(r'TP_(\d+)_')[0]
         melted['Rep'] = melted['Condition'].str.extract(r'REP_(\d+)')[0]
         melted['Time'] = pd.Categorical(
@@ -88,76 +89,11 @@ def prepare_long_df(df_dict, gene, datatype):
         )
         melted['Region'] = region
         melted['Type'] = datatype
+        melted['P_VALUE'] = pval  # attach p-value to all rows
 
         all_data.append(melted)
 
     return pd.concat(all_data, ignore_index=True) if all_data else pd.DataFrame()
-
-
-
-# def prepare_long_df(df_dict, gene, datatype):
-#     all_data = []
-#     for region, df in df_dict.items():
-#         if gene not in df.index:
-#             continue
-#         row = df.loc[gene]
-#         expression = row.filter(like='TP_')
-#         melted = expression.reset_index()
-#         melted.columns = ['Condition', 'Expression']
-#         melted['Time'] = melted['Condition'].str.extract(r'TP_(\d+)_REP_\d+')
-#         melted['Rep'] = melted['Condition'].str.extract(r'REP_(\d+)')
-#         melted['Time'] = pd.Categorical(melted['Time'], categories=['30', '60', '90', '120'], ordered=True)
-#         melted['Region'] = region
-#         melted['Type'] = datatype
-#         all_data.append(melted)
-#     return pd.concat(all_data, ignore_index=True)
-
-# def plot_expression_grid(df, gene_name):
-#     sns.set(style="whitegrid")
-#     fig, axes = plt.subplots(2, 3, figsize=(16, 10), sharex=True)
-
-#     for i, region in enumerate(["Posterior", "Anterior", "Somite"]):
-#         for j, datatype in enumerate(["RNA", "Protein"]):
-#             ax = axes[j, i]
-#             sub_df = df[(df['Region'] == region) & (df['Type'] == datatype)]
-#             if sub_df.empty:
-#                 ax.set_visible(False)
-#                 continue
-
-#             # Select color
-#             color = rna_palette[region.lower()] if datatype == "RNA" else prot_palette[region.lower()]
-
-#             # Boxplot
-#             sns.boxplot(
-#                 data=sub_df,
-#                 x="Time", y="Expression", color=color, ax=ax,
-#                 order=['30', '60', '90', '120'], fliersize=0, width=0.6
-#             )
-#             # Overlay replicates
-#             sns.stripplot(
-#                 data=sub_df,
-#                 x="Time", y="Expression", color="black", ax=ax,
-#                 order=['30', '60', '90', '120'], size=3, jitter=True
-#             )
-
-#             ax.set_title(f"{region}", fontsize=20)
-#             ax.tick_params(axis='both', labelsize=18)
-#             ax.set_xlabel("")
-#             ax.set_ylabel("Expression" if i == 0 else "", fontsize=18)
-
-#             # Dynamic y-limit
-#             y_min, y_max = sub_df["Expression"].min(), sub_df["Expression"].max()
-#             y_pad = (y_max - y_min) * 0.1 if y_max > y_min else 1
-#             ax.set_ylim(y_min - y_pad, y_max + y_pad)
-
-
-#     fig.text(0.01, 0.65, "RNA", va="center", ha="right", fontsize=20, fontweight="bold", rotation=90)
-#     fig.text(0.01, 0.23, "Protein", va="center", ha="right", fontsize=20, fontweight="bold", rotation=90)
-#     fig.suptitle(f"Spatiotemporal Expression of {gene_name}", fontsize=26)
-#     fig.tight_layout(rect=[0, 0, 1, 0.95])
-#     return fig
-
-
 
 def plot_expression_grid(df, gene_name, region):
     sns.set(style="whitegrid")
@@ -195,9 +131,21 @@ def plot_expression_grid(df, gene_name, region):
         ax.set_xlabel("Time (min)", fontsize=12)
         ax.set_ylabel("Expression", fontsize=12)
 
+        # Add p-value annotation
+        pval = sub_df['P_VALUE'].iloc[0] if 'P_VALUE' in sub_df.columns else np.nan
+        if not pd.isna(pval):
+            ax.text(
+                0.98, 0.95,
+                f"p = {pval:.2e}",
+                ha="right", va="top",
+                transform=ax.transAxes,
+                fontsize=12, color="red", fontweight="bold"
+            )
+
     fig.suptitle(f"{region} Spatiotemporal Expression of {gene_name}", fontsize=20, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     return fig
+
 
 # Top-level tabs
 main_tab1, main_tab2 = st.tabs(["Spatial Viewer", "Spatiotemporal Viewer"])
