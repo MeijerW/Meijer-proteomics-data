@@ -507,7 +507,7 @@ with main_tab2:
                 )
 
     with subtab4:
-    
+       
         st.markdown("### Multi-gene Spatiotemporal Expression")
     
         rna_dict, prot_dict = load_spatiotemporal_data()
@@ -543,6 +543,7 @@ with main_tab2:
                 rna_pvals = rna_pvals.reindex(gene_order)
                 prot_pvals = prot_pvals.reindex(gene_order)
     
+                # Z-score normalization
                 if not rna_matrix.empty:
                     rna_matrix = zscore_matrix(rna_matrix)
                 if not prot_matrix.empty:
@@ -571,6 +572,7 @@ with main_tab2:
                     ax_rna.set_xlabel("Time", fontsize=10)
                     ax_rna.set_yticks(np.arange(len(rna_matrix.index)) + 0.5)
                     ax_rna.set_yticklabels(rna_matrix.index, rotation=0, fontsize=10)
+                    ax_rna.yaxis.set_tick_params(labelleft=True)
     
                 # --- RNA p-value heatmap (binary) ---
                 if not rna_pvals.empty:
@@ -601,7 +603,9 @@ with main_tab2:
                     fig.colorbar(sm_rna, cax=cax_rna, orientation='horizontal', label="Z-score (RNA)")
     
                 if not rna_pvals.empty:
-                    sm_rna_pval = plt.cm.ScalarMappable(cmap=cmap_binary, norm=plt.Normalize(vmin=0, vmax=1))
+                    sm_rna_pval = plt.cm.ScalarMappable(
+                        cmap=cmap_binary, norm=Normalize(vmin=0, vmax=0.05)
+                    )
                     sm_rna_pval.set_array([])
                     fig.colorbar(sm_rna_pval, cax=cax_rna_pval, orientation='horizontal', label="Significance (RNA)")
     
@@ -611,7 +615,9 @@ with main_tab2:
                     fig.colorbar(sm_prot, cax=cax_prot, orientation='horizontal', label="Z-score (Protein)")
     
                 if not prot_pvals.empty:
-                    sm_prot_pval = plt.cm.ScalarMappable(cmap=cmap_binary, norm=plt.Normalize(vmin=0, vmax=1))
+                    sm_prot_pval = plt.cm.ScalarMappable(
+                        cmap=cmap_binary, norm=Normalize(vmin=0, vmax=0.05)
+                    )
                     sm_prot_pval.set_array([])
                     fig.colorbar(sm_prot_pval, cax=cax_prot_pval, orientation='horizontal', label="Significance (Protein)")
     
@@ -620,12 +626,14 @@ with main_tab2:
                 ax_prot.set_yticklabels([])
                 ax_prot_pval.set_yticklabels([])
     
+                # Supertitle above plots
                 fig.suptitle(f"{region_choice_multi} Spatiotemporal Heatmaps",
-                             fontsize=16, fontweight="bold", y=1.1)
+                             fontsize=16, fontweight="bold", y=1.12)
                 fig.tight_layout(rect=[0, 0, 1, 0.95])
     
                 st.pyplot(fig)
     
+                # Download button
                 buf = io.BytesIO()
                 fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
                 buf.seek(0)
@@ -636,6 +644,5 @@ with main_tab2:
                     mime="image/png",
                     key=f"download_spatiotemp_heatmap_{region_choice_multi}"
                 )
-
-
-        
+    
+            
