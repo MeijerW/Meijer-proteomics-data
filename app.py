@@ -148,6 +148,86 @@ def plot_expression_grid(df, gene_name, region):
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     return fig
 
+def prepare_heatmap_matrix(df_dict, gene_list, region, datatype):
+    df = df_dict[region]
+    df.index = df.index.astype(str).str.strip().str.lower()
+
+    # subset to requested genes
+    subset = df.loc[df.index.intersection(gene_list)]
+    if subset.empty:
+        return pd.DataFrame()
+
+    # keep only expression columns
+    expr = subset.filter(like="TP_")
+
+    # collapse replicates → average per timepoint
+    melted = expr.reset_index().melt(id_vars="ID", var_name="Condition", value_name="Expression")
+    melted['Time'] = melted['Condition'].str.extract(r'TP_(\d+)_')[0]
+    melted['Time'] = pd.Categorical(melted['Time'], categories=['30', '60', '90', '120'], ordered=True)
+
+    avg = melted.groupby(["ID", "Time"])["Expression"].mean().unstack("Time")
+
+    avg.index.name = None
+    avg.columns.name = None
+    return avg
+
+def plot_heatmaps(rna_matrix, prot_matrix, region, gene_list):
+    # reorder genes to match RNA (if available)
+    if not rna_matrix.empty:
+        genes_order = list(rna_matrix.index)
+    else:
+        genes_order = list(prot_matrix.index)
+
+    rna_matrix = rna_matrix.reindex(genes_order)
+    prot_matrix = prot_matrix.reindex(genes_order)
+
+    fig = plt.figure(figsize=(12, len(genes_order) * 0.4 + 3))
+    gs = gridspec.GridSpec(1, 2, width_ratios=[1, 1], wspace=0.05)
+
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)
+
+    if not rna_matrix.empty:
+        sns.heatmap(
+            rna_matrix,
+            cmap="viridis",
+            ax=ax1,
+            cbar=True,
+            cbar_kws={"label": "Expression"},
+            vmin=np.nanmin(rna_matrix.values),
+            vmax=np.nanmax(rna_matrix.values),
+            yticklabels=True
+        )
+        ax1.set_title("RNA Expression", fontsize=14)
+        ax1.set_xlabel("Time (min)")
+        ax1.set_ylabel("Genes")
+    else:
+        ax1.axis("off")
+        ax1.set_title("No RNA data")
+
+    if not prot_matrix.empty:
+        sns.heatmap(
+            prot_matrix,
+            cmap="viridis",
+            ax=ax2,
+            cbar=True,
+            cbar_kws={"label": "Expression"},
+            vmin=np.nanmin(prot_matrix.values),
+            vmax=np.nanmax(prot_matrix.values),
+            yticklabels=True
+        )
+        ax2.set_title("Protein Expression", fontsize=14)
+        ax2.set_xlabel("Time (min)")
+        ax2.set_ylabel("")
+        ax2.yaxis.tick_right()
+    else:
+        ax2.axis("off")
+        ax2.set_title("No Protein data")
+
+    fig.suptitle(f"{region} Spatiotemporal Heatmaps", fontsize=18, fontweight="bold")
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    return fig
+
 
 # Top-level tabs
 main_tab1, main_tab2 = st.tabs(["Spatial Viewer", "Spatiotemporal Viewer"])
@@ -350,7 +430,7 @@ with main_tab2:
         rna_dict, prot_dict = load_spatiotemporal_data()
     
         gene_input = st.text_input("Enter gene name:", value="")
-        region_choice = st.selectbox("Select region", ["Anterior", "Posterior", "Somite"])
+        region_choice = st.selectbox("Select region", ["Posterior", "Anterior", "Somite"])
     
         if gene_input:
             rna_long = prepare_long_df({region_choice: rna_dict[region_choice]}, gene_input, "RNA")
@@ -405,13 +485,35 @@ with main_tab2:
 
     with subtab4:
         st.markdown("### Multi-gene Spatiotemporal Expression")
-
-
-        # Select region
-        region = st.selectbox("Select region", ["anterior", "posterior", "somite"])
-
-        st.markdown("### Multi-gene Spatiotemporal Expression")
-        st.markdown("# Work in progress")
-
-
+    
+        # Dropdown for region
+        region_choice = st.selectbox("Select region", ["Posterior", "Anterior", "Somite"])
+    
+        # Input genes
+        gene_input = st.text_input("Enter genes (comma-separated):", value="")
+        if gene_input:
+            gene_list = [g.strip().lower() for g in gene_input.split(",") if g.strip()]
+    
+            rna_dict, prot_dict = load_spatiotemporal_data()
+            rna_matrix = prepare_heatmap_matrix(rna_dict, gene_list, region_choice, "RNA")
+            prot_matrix = prepare_heatmap_matrix(prot_dict, gene_list, region_choice, "Protein")
+    
+            if rna_matrix.empty and prot_matrix.empty:
+                st.warning(f"No data found for the entered genes in {region_choice}.")
+            else:
+                fig = plot_heatmaps(rna_matrix, prot_matrix, region_choice, gene_list)
+                st.pyplot(fig)
+    
+                # Save/download
+                buf = io.BytesIO()
+                fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
+                buf.seek(0)
+                st.download_button(
+                    label="📥 Download Heatmap as PNG",
+                    data=buf,
+                    file_name=f"{region_choice}_spatiotemporal_heatmap.png",
+                    mime="image/png"
+                )
+    
+    
 
