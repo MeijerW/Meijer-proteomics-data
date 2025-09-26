@@ -65,23 +65,34 @@ def load_spatiotemporal_data():
     return load_files(RNA_FILES), load_files(PROT_FILES)
 
 def prepare_long_df(df_dict, gene, datatype):
+    gene = gene.strip().lower()  # normalize input
     all_data = []
     for region, df in df_dict.items():
+        # normalize dataframe index
+        df.index = df.index.astype(str).str.strip().str.lower()
+
         if gene not in df.index:
             continue
-        row = df.loc[gene].filter(like='TP_')  # Only expression columns
+
+        row = df.loc[gene].filter(like='TP_')
         melted = row.reset_index()
         melted.columns = ['Condition', 'Expression']
-        
-        # Extract metadata
+
+        # Extract time and replicate info
         melted['Time'] = melted['Condition'].str.extract(r'TP_(\d+)_')[0]
         melted['Rep'] = melted['Condition'].str.extract(r'REP_(\d+)')[0]
-        melted['Time'] = pd.Categorical(melted['Time'], categories=['30', '60', '90', '120'], ordered=True)
+        melted['Time'] = pd.Categorical(
+            melted['Time'],
+            categories=['30', '60', '90', '120'],
+            ordered=True
+        )
         melted['Region'] = region
         melted['Type'] = datatype
-        
+
         all_data.append(melted)
+
     return pd.concat(all_data, ignore_index=True) if all_data else pd.DataFrame()
+
 
 
 # def prepare_long_df(df_dict, gene, datatype):
