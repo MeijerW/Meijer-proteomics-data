@@ -513,7 +513,7 @@ with main_tab2:
     
         # unique keys
         region_choice_multi = st.selectbox(
-            "Select region (multi)", ["Anterior", "Posterior", "Somite"],
+            "Select region (multi)", [ "Posterior", "Anterior", "Somite"],
             index=0, key="st_spatio_multi_region"
         )
     
@@ -530,7 +530,14 @@ with main_tab2:
             if (rna_matrix.empty) and (prot_matrix.empty):
                 st.warning(f"No data found for the entered genes in {region_choice_multi}.")
             else:
-                fig = plot_heatmaps(rna_matrix, prot_matrix, region_choice_multi, gene_list)
+                fig = plot_heatmaps(
+                            rna_matrix,
+                            prot_matrix,
+                            rna_pvals,
+                            prot_pvals,
+                            region_choice_multi,
+                            gene_list
+                        )
                 st.pyplot(fig)
     
                 buf = io.BytesIO()
