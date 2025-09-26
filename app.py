@@ -148,52 +148,45 @@ def prepare_long_df(df_dict, gene, datatype):
 
 
 
-def plot_expression_grid(df, gene_name):
+def plot_expression_grid(df, gene_name, region):
     sns.set(style="whitegrid")
-    fig, axes = plt.subplots(2, 3, figsize=(16, 10), sharex=True, sharey=False)
+    fig, axes = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
 
-    for col, region in enumerate(["Posterior", "Anterior", "Somite"]):
-        for row, datatype in enumerate(["RNA", "Protein"]):
-            ax = axes[row, col]
-            sub_df = df[(df['Region'] == region) & (df['Type'] == datatype)]
-            if sub_df.empty:
-                ax.axis("off")
-                continue
+    for row, datatype in enumerate(["RNA", "Protein"]):
+        ax = axes[row]
+        sub_df = df[(df['Region'] == region) & (df['Type'] == datatype)]
+        if sub_df.empty:
+            ax.axis("off")
+            ax.set_title(f"{datatype} data missing", fontsize=16, color="red")
+            continue
 
-            # Palette
-            color = rna_palette[region.lower()] if datatype == "RNA" else prot_palette[region.lower()]
+        # Palette
+        color = rna_palette[region.lower()] if datatype == "RNA" else prot_palette[region.lower()]
 
-            # Boxplot
-            sns.boxplot(
-                data=sub_df,
-                x="Time", y="Expression",
-                color=color, ax=ax,
-                order=['30', '60', '90', '120'],
-                fliersize=0, width=0.6
-            )
-            # Overlay replicates
-            sns.stripplot(
-                data=sub_df,
-                x="Time", y="Expression",
-                color="black", ax=ax,
-                order=['30', '60', '90', '120'],
-                size=3, jitter=True
-            )
+        # Boxplot
+        sns.boxplot(
+            data=sub_df,
+            x="Time", y="Expression",
+            color=color, ax=ax,
+            order=['30', '60', '90', '120'],
+            fliersize=0, width=0.6
+        )
+        # Overlay replicates
+        sns.stripplot(
+            data=sub_df,
+            x="Time", y="Expression",
+            color="black", ax=ax,
+            order=['30', '60', '90', '120'],
+            size=3, jitter=True
+        )
 
-            ax.set_title(f"{region}", fontsize=18)
-            if col == 0:
-                ax.set_ylabel(f"{datatype} Expression", fontsize=14)
-            else:
-                ax.set_ylabel("")
-            ax.set_xlabel("Time (min)", fontsize=12)
+        ax.set_title(f"{datatype} Expression", fontsize=18)
+        ax.set_xlabel("Time (min)", fontsize=12)
+        ax.set_ylabel("Expression", fontsize=12)
 
-    fig.suptitle(f"Spatiotemporal Expression of {gene_name}", fontsize=22, fontweight="bold")
+    fig.suptitle(f"{region} Spatiotemporal Expression of {gene_name}", fontsize=20, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     return fig
-
-
-
-
 
 # Top-level tabs
 main_tab1, main_tab2 = st.tabs(["Spatial Viewer", "Spatiotemporal Viewer"])
@@ -396,16 +389,17 @@ with main_tab2:
         rna_dict, prot_dict = load_spatiotemporal_data()
     
         gene_input = st.text_input("Enter gene name:", value="")
-        
+        region_choice = st.selectbox("Select region", ["Anterior", "Posterior", "Somite"])
+    
         if gene_input:
-            rna_long = prepare_long_df(rna_dict, gene_input, "RNA")
-            prot_long = prepare_long_df(prot_dict, gene_input, "Protein")
+            rna_long = prepare_long_df({region_choice: rna_dict[region_choice]}, gene_input, "RNA")
+            prot_long = prepare_long_df({region_choice: prot_dict[region_choice]}, gene_input, "Protein")
             combined_df = pd.concat([rna_long, prot_long], ignore_index=True)
     
             if combined_df.empty:
-                st.warning(f"Gene '{gene_input}' not found in datasets.")
+                st.warning(f"Gene '{gene_input}' not found in {region_choice} datasets.")
             else:
-                fig = plot_expression_grid(combined_df, gene_input)
+                fig = plot_expression_grid(combined_df, gene_input, region_choice)
                 st.pyplot(fig)
     
                 # Save/download
@@ -415,7 +409,7 @@ with main_tab2:
                 st.download_button(
                     label="📥 Download this figure as PNG",
                     data=buf,
-                    file_name=f"{gene_input}_spatiotemporal_expression.png",
+                    file_name=f"{gene_input}_{region_choice}_spatiotemporal_expression.png",
                     mime="image/png"
                 )
         # st.markdown("### Single gene dynamic expression")
