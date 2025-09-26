@@ -476,7 +476,7 @@ with main_tab2:
         # Unique keys for widgets
         gene_input = st.text_input("Enter gene name (single):", value="", key="st_spatio_single_gene")
         region_choice = st.selectbox(
-            "Select region (single)", ["Anterior", "Posterior", "Somite"],
+            "Select region (single)", ["Posterior", "Anterior",  "Somite"],
             index=0, key="st_spatio_single_region"
         )
     
@@ -526,7 +526,11 @@ with main_tab2:
             gene_list = [g.strip().lower() for g in gene_input_multi.split(",") if g.strip()]
             rna_matrix = prepare_heatmap_matrix(rna_dict, gene_list, region_choice_multi)
             prot_matrix = prepare_heatmap_matrix(prot_dict, gene_list, region_choice_multi)
-    
+            
+            # Prepare p-value matrices
+            rna_pvals = prepare_pval_matrix(rna_dict, gene_list, region_choice_multi)
+            prot_pvals = prepare_pval_matrix(prot_dict, gene_list, region_choice_multi)
+
             if (rna_matrix.empty) and (prot_matrix.empty):
                 st.warning(f"No data found for the entered genes in {region_choice_multi}.")
             else:
@@ -536,8 +540,7 @@ with main_tab2:
                             rna_pvals,
                             prot_pvals,
                             region_choice_multi,
-                            gene_list
-                        )
+                            gene_list)
                 st.pyplot(fig)
     
                 buf = io.BytesIO()
