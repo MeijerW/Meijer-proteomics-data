@@ -595,8 +595,13 @@ with main_tab2:
                 if not prot_pvals.empty:
                     mask_prot = (prot_pvals.values < 0.05).astype(int)
                     sns.heatmap(mask_prot, cmap=cmap_binary, annot=prot_pvals.values, fmt=".3f",
-                                cbar=False, ax=ax_prot_pval, yticklabels=False)
+                                cbar=False, ax=ax_prot_pval, yticklabels=True)
                     ax_prot_pval.set_title("Protein p-values", fontsize=12, pad=25)
+                    # Show gene names on right
+                    ax_prot_pval.yaxis.tick_right()
+                    ax_prot_pval.yaxis.set_label_position("right")
+                    ax_prot_pval.set_yticks(np.arange(len(prot_matrix.index)) + 0.5)
+                    ax_prot_pval.set_yticklabels(prot_matrix.index, rotation=0, fontsize=10)
     
                 # --- Horizontal colorbars ---
                 if not rna_matrix.empty:
