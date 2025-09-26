@@ -134,13 +134,14 @@ def plot_expression_grid(df, gene_name, region):
         # Add p-value annotation
         pval = sub_df['P_VALUE'].iloc[0] if 'P_VALUE' in sub_df.columns else np.nan
         if not pd.isna(pval):
+            # Show p-value in plain decimal notation with up to 6 significant digits
+            pval_str = f"{pval:.6f}".rstrip("0").rstrip(".")  # trim trailing zeros/dot
             ax.text(
                 0.98, 0.95,
-                f"p = {pval:.2e}",
+                f"p = {pval_str}",
                 ha="right", va="top",
                 transform=ax.transAxes,
                 fontsize=12, color="red", fontweight="bold"
-            )
 
     fig.suptitle(f"{region} Spatiotemporal Expression of {gene_name}", fontsize=20, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.95])
