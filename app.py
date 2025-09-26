@@ -524,7 +524,7 @@ with main_tab2:
                 )
 
     with subtab4:
-    
+        
         st.markdown("### Multi-gene Spatiotemporal Expression")
     
         # Load spatiotemporal data once
@@ -558,6 +558,7 @@ with main_tab2:
                 else:
                     gene_order = prot_matrix.index.tolist()
     
+                # Reindex matrices consistently
                 rna_matrix = rna_matrix.reindex(gene_order)
                 prot_matrix = prot_matrix.reindex(gene_order)
                 rna_pvals = rna_pvals.reindex(gene_order)
@@ -568,34 +569,36 @@ with main_tab2:
                     rna_matrix = zscore_matrix(rna_matrix)
                 if not prot_matrix.empty:
                     prot_matrix = zscore_matrix(prot_matrix)
-                    
-                # --- Layout ---
+    
+                # --- Create figure with GridSpec ---
                 fig = plt.figure(figsize=(16, max(3, len(gene_order) * 0.5)))
                 gs = gridspec.GridSpec(2, 4, height_ratios=[1, 0.05], width_ratios=[4, 1, 4, 1],
                                        wspace=0.05, hspace=0.3)
-                
-                # --- Top row heatmaps ---
+    
+                # Top row axes
                 ax_rna = fig.add_subplot(gs[0, 0])
                 ax_rna_pval = fig.add_subplot(gs[0, 1], sharey=ax_rna)
                 ax_prot = fig.add_subplot(gs[0, 2], sharey=ax_rna)
                 ax_prot_pval = fig.add_subplot(gs[0, 3], sharey=ax_rna)
-                
-                # --- Bottom row colorbars ---
+    
+                # Bottom row colorbar axes
                 cax_rna = fig.add_subplot(gs[1, 0])
                 cax_rna_pval = fig.add_subplot(gs[1, 1])
                 cax_prot = fig.add_subplot(gs[1, 2])
                 cax_prot_pval = fig.add_subplot(gs[1, 3])
-                
+    
                 # --- RNA heatmap ---
                 if not rna_matrix.empty:
                     sns.heatmap(rna_matrix, cmap="viridis", ax=ax_rna, cbar=False,
                                 vmin=-2, vmax=2, yticklabels=True)
                     ax_rna.set_title("RNA Expression", fontsize=14, pad=12)
                     ax_rna.set_xlabel("Time", fontsize=12)
-                    ax_rna.set_ylabel("Genes", fontsize=12)
+                    # Set gene labels on left-most axis
+                    ax_rna.set_yticks(np.arange(len(rna_matrix.index)) + 0.5)
+                    ax_rna.set_yticklabels(rna_matrix.index, rotation=0, fontsize=10)
                 else:
                     ax_rna.axis("off")
-                
+    
                 # --- RNA p-value heatmap ---
                 if not rna_pvals.empty:
                     norm_rna = create_pval_norm(rna_pvals.values)
@@ -604,16 +607,16 @@ with main_tab2:
                     ax_rna_pval.set_title("RNA p-values", fontsize=14, pad=12)
                 else:
                     ax_rna_pval.axis("off")
-                
+    
                 # --- Protein heatmap ---
                 if not prot_matrix.empty:
                     sns.heatmap(prot_matrix, cmap="viridis", ax=ax_prot, cbar=False,
-                                vmin=-2, vmax=2, yticklabels=False)  # Gene labels only on left-most
+                                vmin=-2, vmax=2, yticklabels=False)
                     ax_prot.set_title("Protein Expression", fontsize=14, pad=12)
                     ax_prot.set_xlabel("Time", fontsize=12)
                 else:
                     ax_prot.axis("off")
-                
+    
                 # --- Protein p-value heatmap ---
                 if not prot_pvals.empty:
                     norm_prot = create_pval_norm(prot_pvals.values)
@@ -622,40 +625,40 @@ with main_tab2:
                     ax_prot_pval.set_title("Protein p-values", fontsize=14, pad=12)
                 else:
                     ax_prot_pval.axis("off")
-                
-                # --- Colorbars ---
+    
+                # --- Horizontal colorbars ---
                 if not rna_matrix.empty:
                     sm_rna = plt.cm.ScalarMappable(cmap="viridis", norm=plt.Normalize(vmin=-2, vmax=2))
                     sm_rna.set_array([])
                     fig.colorbar(sm_rna, cax=cax_rna, orientation='horizontal', label="Z-score (RNA)")
-                
+    
                 if not rna_pvals.empty:
                     sm_rna_pval = plt.cm.ScalarMappable(cmap=create_pval_cmap(), norm=norm_rna)
                     sm_rna_pval.set_array([])
                     fig.colorbar(sm_rna_pval, cax=cax_rna_pval, orientation='horizontal', label="p-value (RNA)")
-                
+    
                 if not prot_matrix.empty:
                     sm_prot = plt.cm.ScalarMappable(cmap="viridis", norm=plt.Normalize(vmin=-2, vmax=2))
                     sm_prot.set_array([])
                     fig.colorbar(sm_prot, cax=cax_prot, orientation='horizontal', label="Z-score (Protein)")
-                
+    
                 if not prot_pvals.empty:
                     sm_prot_pval = plt.cm.ScalarMappable(cmap=create_pval_cmap(), norm=norm_prot)
                     sm_prot_pval.set_array([])
                     fig.colorbar(sm_prot_pval, cax=cax_prot_pval, orientation='horizontal', label="p-value (Protein)")
-                
-                # --- Final layout ---
-                ax_rna.set_yticklabels(rna_matrix.index, rotation=0)  # Gene labels on left-most axis
-                ax_rna.tick_params(left=True)
-                ax_rna_pval.tick_params(left=False)
-                ax_prot.tick_params(left=False)
-                ax_prot_pval.tick_params(left=False)
-                
+    
+                # Disable y-ticks on other axes
+                ax_rna_pval.set_yticklabels([])
+                ax_prot.set_yticklabels([])
+                ax_prot_pval.set_yticklabels([])
+    
                 fig.suptitle(f"{region_choice_multi} Spatiotemporal Heatmaps", fontsize=18, fontweight="bold")
                 fig.tight_layout(rect=[0, 0, 1, 0.95])
+    
+                # Show figure
                 st.pyplot(fig)
-
-                    # Download button
+    
+                # --- Download button ---
                 buf = io.BytesIO()
                 fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
                 buf.seek(0)
@@ -667,5 +670,5 @@ with main_tab2:
                     key=f"download_spatiotemp_heatmap_{region_choice_multi}"
                 )
     
-        
-
+            
+    
