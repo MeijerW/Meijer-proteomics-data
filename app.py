@@ -52,6 +52,21 @@ def load_data():
     prot['Type'] = 'Protein'
     return rna, prot
 
+from matplotlib.colors import LinearSegmentedColormap, Normalize
+
+# Create a custom colormap for p-values
+def create_pval_cmap():
+    colors = ["white", "#FFC0CB", "#800080"]  # white → pink → purple
+    cmap = LinearSegmentedColormap.from_list("pval_cmap", colors)
+    return cmap
+
+# Create a norm that flips the scale: lower p-values (more significant) -> darker
+def create_pval_norm(pvals):
+    # Clip maximum p-value at 0.05
+    max_p = 0.05
+    norm = Normalize(vmin=0, vmax=max_p, clip=True)
+    return norm
+
 @st.cache_data
 def load_spatiotemporal_data():
     def load_files(file_dict):
@@ -570,9 +585,12 @@ with main_tab2:
     
                 # RNA p-values
                 ax2 = fig.add_subplot(gs[0, 1], sharey=ax1)
+                pval_cmap = create_pval_cmap()
+                norm = create_pval_norm(rna_pvals.values)  # same for prot
+                
                 if not rna_pvals.empty:
-                    sns.heatmap(rna_pvals, cmap="viridis", annot=True, fmt=".5f",
-                                cbar=False, ax=ax2, yticklabels=False)
+                    sns.heatmap(rna_pvals, cmap=pval_cmap, annot=True, fmt=".3f",
+                            cbar=False, ax=ax2, yticklabels=False, norm=norm)
                     ax2.set_title("RNA p-values", fontsize=14, pad=12)
                 else:
                     ax2.axis("off")
@@ -589,12 +607,15 @@ with main_tab2:
                 else:
                     ax3.axis("off")
                     ax3.set_title("No Protein data")
-    
+
+                
                 # Protein p-values
                 ax4 = fig.add_subplot(gs[1, 1], sharey=ax3)
+                pval_cmap = create_pval_cmap()
+                norm = create_pval_norm(prot_pvals.values)  # same for prot
                 if not prot_pvals.empty:
-                    sns.heatmap(prot_pvals, cmap="viridis", annot=True, fmt=".5f",
-                                cbar=False, ax=ax4, yticklabels=False)
+                    sns.heatmap(prot_pvals, cmap=pval_cmap, annot=True, fmt=".3f",
+                    cbar=False, ax=ax4, yticklabels=False, norm=norm)
                     ax4.set_title("Protein p-values", fontsize=14, pad=12)
                 else:
                     ax4.axis("off")
