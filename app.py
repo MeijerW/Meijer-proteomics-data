@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib.gridspec as gridspec
 import io
 from matplotlib.colors import ListedColormap
+from matplotlib.colors import ListedColormap, Normalize
+
 
 # --- SETTINGS
 BASE = "https://raw.githubusercontent.com/MeijerW/ProteomeUI/main/Datafiles/"
