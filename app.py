@@ -594,17 +594,24 @@ with main_tab2:
                 # --- Protein p-value heatmap (binary) ---
                 if not prot_pvals.empty:
                     cmap_binary = ListedColormap(["white", "purple"])
-                    # Create DataFrame to retain index
-                    mask_prot_df = pd.DataFrame((prot_pvals.values < 0.05).astype(int),
-                                                index=prot_pvals.index,
-                                                columns=prot_pvals.columns)
-                    sns.heatmap(mask_prot_df, cmap=cmap_binary, annot=prot_pvals.values, fmt=".3f",
+                    
+                    # Ensure gene names are index
+                    prot_pvals_plot = prot_pvals.copy()
+                    if prot_pvals_plot.columns[0] != 'p-value':
+                        prot_pvals_plot.columns = ['p-value']
+                
+                    # Create binary mask DataFrame for coloring
+                    mask_prot_df = (prot_pvals_plot < 0.05).astype(int)
+                    
+                    # Heatmap with annotation
+                    sns.heatmap(mask_prot_df, cmap=cmap_binary,
+                                annot=prot_pvals_plot.values, fmt=".3f",
                                 cbar=False, ax=ax_prot_pval, yticklabels=True)
-                    ax_prot_pval.set_title("Protein p-values", fontsize=12, pad=25)
-                    # Gene names on right
+                    
+                    # Show gene names on right
                     ax_prot_pval.yaxis.tick_right()
                     ax_prot_pval.yaxis.set_label_position("right")
-                    ax_prot_pval.set_yticklabels(prot_pvals.index, rotation=0, fontsize=10)
+                    ax_prot_pval.set_yticklabels(prot_pvals_plot.index, rotation=0, fontsize=10)
     
                 # --- Horizontal colorbars ---
                 if not rna_matrix.empty:
