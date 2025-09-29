@@ -721,6 +721,7 @@ with main_tab2:
                                      yticklabels=False, annot=True, fmt=".3f",
                                      annot_kws={"size": 7})
                     f2.set_title("p-value", fontsize=10)
+                    ax[0, 1].set_ylabel("")
         
                     # --- Protein expression ---
                     f3 = sns.heatmap(prot_matrix, cmap="viridis", ax=ax[0, 2], cbar=False,
@@ -734,6 +735,7 @@ with main_tab2:
                     f4.set_title("p-value", fontsize=10)
                     ax[0, 3].yaxis.tick_right()
                     ax[0, 3].set_yticklabels(prot_pvals.index, rotation=0, fontsize=7)
+                    ax[0, 3].set_ylabel("")
         
                     # --- Colorbars ---
                     cbar1 = fig.colorbar(f1.collections[0], cax=ax[1, 0], orientation="horizontal", label="Z-score")
@@ -741,12 +743,13 @@ with main_tab2:
                     cbar3 = fig.colorbar(f3.collections[0], cax=ax[1, 2], orientation="horizontal", label="Z-score")
                     cbar4 = fig.colorbar(f4.collections[0], cax=ax[1, 3], orientation="horizontal", label="p-value")
         
-                    # Remove outlines
                     for cb in [cbar1, cbar2, cbar3, cbar4]:
                         cb.outline.set_visible(False)
         
-                    fig.suptitle(f"{region_choice_multi} Spatiotemporal Heatmaps", y=1.02, fontsize=14, fontweight="bold")
-                    plt.tight_layout()
+                    # Title + layout adjustments
+                    fig.suptitle(f"{region_choice_multi} Spatiotemporal Heatmaps", y=1.05,
+                                 fontsize=14, fontweight="bold")
+                    plt.subplots_adjust(top=0.88, bottom=0.18, hspace=0.4, wspace=0.4)
         
                     # Show in Streamlit
                     st.pyplot(fig)
