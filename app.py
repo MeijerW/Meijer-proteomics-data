@@ -554,7 +554,8 @@ with main_tab2:
                     # Create figure with subplots + colorbars
                     fig, ax = plt.subplots(
                         2, 4, figsize=(10, len(new_index) * 0.35),
-                        gridspec_kw={"height_ratios": [1, 0.05], "width_ratios": [0.4, 0.1, 0.4, 0.1]}
+                        gridspec_kw={"height_ratios": [1, 0.05], "width_ratios": [0.4, 0.1, 0.4, 0.1]},
+                        constrained_layout=True
                     )
         
                     # --- RNA expression ---
