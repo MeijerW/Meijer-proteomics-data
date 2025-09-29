@@ -747,7 +747,7 @@ with main_tab2:
                         cb.outline.set_visible(False)
         
                     # Title + layout adjustments
-                    fig.suptitle(f"{region_choice_multi} Spatiotemporal Heatmaps", y=1.05,
+                    fig.suptitle(f"{region_choice_multi} Spatiotemporal Heatmaps", y=1.1,
                                  fontsize=14, fontweight="bold")
                     plt.subplots_adjust(top=0.88, bottom=0.18, hspace=0.4, wspace=0.4)
         
