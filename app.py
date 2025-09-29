@@ -619,24 +619,49 @@ with main_tab2:
                     sm_rna.set_array([])
                     fig.colorbar(sm_rna, cax=cax_rna, orientation='horizontal', label="Z-score (RNA)")
     
+                # --- RNA p-value heatmap (binary) ---
                 if not rna_pvals.empty:
-                    sm_rna_pval = plt.cm.ScalarMappable(
-                        cmap=cmap_binary, norm=Normalize(vmin=0, vmax=0.05)
-                    )
-                    sm_rna_pval.set_array([])
-                    fig.colorbar(sm_rna_pval, cax=cax_rna_pval, orientation='horizontal', label="Significance (RNA)")
+                    cmap_binary = ListedColormap(["white", "purple"])
+                    
+                    # Keep gene names in index
+                    rna_pvals_plot = rna_pvals.copy()
+                    if rna_pvals_plot.columns[0] != "p-value":
+                        rna_pvals_plot.columns = ["p-value"]
+                
+                    # Create mask DataFrame with same index
+                    mask_rna_df = (rna_pvals_plot < 0.05).astype(int)
+                
+                    # Plot with DataFrame -> keeps gene IDs
+                    sns.heatmap(mask_rna_df, cmap=cmap_binary,
+                                annot=rna_pvals_plot, fmt=".3f",
+                                cbar=False, ax=ax_rna_pval, yticklabels=False)
+                    ax_rna_pval.set_title("RNA p-values", fontsize=12, pad=25)
     
                 if not prot_matrix.empty:
                     sm_prot = plt.cm.ScalarMappable(cmap="viridis", norm=plt.Normalize(vmin=-2, vmax=2))
                     sm_prot.set_array([])
                     fig.colorbar(sm_prot, cax=cax_prot, orientation='horizontal', label="Z-score (Protein)")
     
+
+                # --- Protein p-value heatmap (binary) ---
                 if not prot_pvals.empty:
-                    sm_prot_pval = plt.cm.ScalarMappable(
-                        cmap=cmap_binary, norm=Normalize(vmin=0, vmax=0.05)
-                    )
-                    sm_prot_pval.set_array([])
-                    fig.colorbar(sm_prot_pval, cax=cax_prot_pval, orientation='horizontal', label="Significance (Protein)")
+                    cmap_binary = ListedColormap(["white", "purple"])
+                    
+                    prot_pvals_plot = prot_pvals.copy()
+                    if prot_pvals_plot.columns[0] != "p-value":
+                        prot_pvals_plot.columns = ["p-value"]
+                
+                    mask_prot_df = (prot_pvals_plot < 0.05).astype(int)
+                
+                    sns.heatmap(mask_prot_df, cmap=cmap_binary,
+                                annot=prot_pvals_plot, fmt=".3f",
+                                cbar=False, ax=ax_prot_pval, yticklabels=True)
+            
+                # Gene names on right
+                ax_prot_pval.yaxis.tick_right()
+                ax_prot_pval.set_yticklabels(prot_pvals_plot.index, rotation=0, fontsize=10)
+                ax_prot_pval.set_ylabel("")  # remove redundant label
+
     
                 # Turn off gene labels for all except left RNA heatmap
                 ax_rna_pval.set_yticklabels([])
