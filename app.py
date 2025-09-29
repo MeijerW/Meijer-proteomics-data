@@ -509,8 +509,8 @@ with main_tab2:
                 )
 
     with subtab4:
-            st.subheader("Spatiotemporal RNA vs Protein with p-values")
-    
+        st.subheader("Spatiotemporal RNA vs Protein with p-values")
+
         if selected_genes:
             # Data prep
             rna_matrix = prepare_data_matrix(rna_df, selected_genes)
@@ -594,6 +594,7 @@ with main_tab2:
                 cb_rna.set_ticks([0.5, 1.5])
                 cb_rna.set_ticklabels(["Not significant", "Significant"])
     
+    
             if not prot_pvals.empty:
                 cax_prot_pval = fig.add_axes([0.85, 0.08, 0.1, 0.02])
                 bounds = [0, 1, 2]
@@ -604,7 +605,18 @@ with main_tab2:
                 cb_prot.set_ticks([0.5, 1.5])
                 cb_prot.set_ticklabels(["Not significant", "Significant"])
     
+            # Show figure in Streamlit
             st.pyplot(fig)
+    
+            # === Download button ===
+            buf = io.BytesIO()
+            fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
+            st.download_button(
+                label="Download heatmap figure",
+                data=buf.getvalue(),
+                file_name="rna_protein_pval_heatmaps.png",
+                mime="image/png"
+            )
+    
         else:
             st.info("Select genes to display spatiotemporal heatmaps.")
-    
