@@ -723,7 +723,9 @@ with main_tab2:
                     cax_rna_pval = fig.add_subplot(gs[1, 1])
                     cax_prot = fig.add_subplot(gs[1, 2])
                     cax_prot_pval = fig.add_subplot(gs[1, 3])
-        
+
+                    cmap_binary = ListedColormap(["white", "purple"])
+
                     # --- RNA heatmap ---
                     if not rna_matrix.empty:
                         sns.heatmap(
