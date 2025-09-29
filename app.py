@@ -705,51 +705,59 @@ with main_tab2:
                     rna_pvals = rna_pvals.reindex(new_index)
                     prot_pvals = prot_pvals.reindex(new_index)
         
-                    # Create figure with subplots + colorbars
+                    # --- Create figure: only heatmaps in grid ---
                     fig, ax = plt.subplots(
-                        2, 4, figsize=(10, len(new_index) * 0.35),
-                        gridspec_kw={"height_ratios": [1, 0.05], "width_ratios": [0.4, 0.1, 0.4, 0.1]}
+                        1, 4, figsize=(10, len(new_index) * 0.35),
+                        gridspec_kw={"width_ratios": [0.4, 0.1, 0.4, 0.1]}
                     )
         
                     # --- RNA expression ---
-                    f1 = sns.heatmap(rna_matrix, cmap="viridis", ax=ax[0, 0], cbar=False,
+                    f1 = sns.heatmap(rna_matrix, cmap="viridis", ax=ax[0], cbar=False,
                                      yticklabels=False, vmin=-2, vmax=2)
                     f1.set_title("RNA", fontsize=10)
         
                     # --- RNA p-values ---
-                    f2 = sns.heatmap(rna_pvals, cmap="RdPu_r", ax=ax[0, 1], cbar=False,
+                    f2 = sns.heatmap(rna_pvals, cmap="RdPu_r", ax=ax[1], cbar=False,
                                      yticklabels=False, annot=True, fmt=".3f",
                                      annot_kws={"size": 7})
                     f2.set_title("p-value", fontsize=10)
-                    ax[0, 1].set_ylabel("")
+                    ax[1].set_ylabel("")
         
                     # --- Protein expression ---
-                    f3 = sns.heatmap(prot_matrix, cmap="viridis", ax=ax[0, 2], cbar=False,
+                    f3 = sns.heatmap(prot_matrix, cmap="viridis", ax=ax[2], cbar=False,
                                      yticklabels=False, vmin=-2, vmax=2)
                     f3.set_title("Protein", fontsize=10)
         
                     # --- Protein p-values (with gene labels on right) ---
-                    f4 = sns.heatmap(prot_pvals, cmap="RdPu_r", ax=ax[0, 3], cbar=False,
+                    f4 = sns.heatmap(prot_pvals, cmap="RdPu_r", ax=ax[3], cbar=False,
                                      yticklabels=True, annot=True, fmt=".3f",
                                      annot_kws={"size": 7})
                     f4.set_title("p-value", fontsize=10)
-                    ax[0, 3].yaxis.tick_right()
-                    ax[0, 3].set_yticklabels(prot_pvals.index, rotation=0, fontsize=7)
-                    ax[0, 3].set_ylabel("")
+                    ax[3].yaxis.tick_right()
+                    ax[3].set_yticklabels(prot_pvals.index, rotation=0, fontsize=7)
+                    ax[3].set_ylabel("")
         
-                    # --- Colorbars ---
-                    cbar1 = fig.colorbar(f1.collections[0], cax=ax[1, 0], orientation="horizontal", label="Z-score")
-                    cbar2 = fig.colorbar(f2.collections[0], cax=ax[1, 1], orientation="horizontal", label="p-value")
-                    cbar3 = fig.colorbar(f3.collections[0], cax=ax[1, 2], orientation="horizontal", label="Z-score")
-                    cbar4 = fig.colorbar(f4.collections[0], cax=ax[1, 3], orientation="horizontal", label="p-value")
+                    # --- Fixed-size colorbars (manually positioned) ---
+                    cbar_height = 0.02   # fixed height
+                    cbar_y = 0.08        # fixed distance from bottom
+        
+                    cax1 = fig.add_axes([0.13, cbar_y, 0.15, cbar_height])  # RNA
+                    cax2 = fig.add_axes([0.34, cbar_y, 0.08, cbar_height])  # RNA p-val
+                    cax3 = fig.add_axes([0.57, cbar_y, 0.15, cbar_height])  # Protein
+                    cax4 = fig.add_axes([0.78, cbar_y, 0.08, cbar_height])  # Protein p-val
+        
+                    cbar1 = fig.colorbar(f1.collections[0], cax=cax1, orientation="horizontal", label="Z-score")
+                    cbar2 = fig.colorbar(f2.collections[0], cax=cax2, orientation="horizontal", label="p-value")
+                    cbar3 = fig.colorbar(f3.collections[0], cax=cax3, orientation="horizontal", label="Z-score")
+                    cbar4 = fig.colorbar(f4.collections[0], cax=cax4, orientation="horizontal", label="p-value")
         
                     for cb in [cbar1, cbar2, cbar3, cbar4]:
                         cb.outline.set_visible(False)
         
                     # Title + layout adjustments
-                    fig.suptitle(f"{region_choice_multi} Spatiotemporal Heatmaps", y=1.1,
+                    fig.suptitle(f"{region_choice_multi} Spatiotemporal Heatmaps", y=0.98,
                                  fontsize=14, fontweight="bold")
-                    plt.subplots_adjust(top=0.88, bottom=0.18, hspace=0.4, wspace=0.4)
+                    plt.subplots_adjust(top=0.9, bottom=0.15, wspace=0.4)
         
                     # Show in Streamlit
                     st.pyplot(fig)
