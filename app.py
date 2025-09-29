@@ -730,46 +730,28 @@ with main_tab2:
                             rna_matrix, cmap="viridis", ax=ax_rna,
                             cbar=False, vmin=-2, vmax=2, yticklabels=False
                         )
-                        ax_rna.set_title("RNA Expression", fontsize=12, pad=10)
-                        ax_rna.set_xlabel("Time", fontsize=10)
-                        ax_rna.set_ylabel("")  # remove ID label
-        
-                    # --- RNA p-values (binary coloring) ---
+                    
+                    # --- RNA p-values ---
                     if not rna_pvals.empty:
-                        cmap_binary = ListedColormap(["white", "purple"])
                         mask_rna = (rna_pvals.values < 0.05).astype(int)
-                        sns.heatmap(
-                            mask_rna, cmap=cmap_binary, annot=rna_pvals.values, fmt=".3f",
-                            cbar=False, ax=ax_rna_pval, yticklabels=False
-                        )
-                        ax_rna_pval.set_title("RNA p-values", fontsize=12, pad=10)
-                        ax_rna_pval.set_ylabel("")  # remove ID label
-        
+                        sns.heatmap(mask_rna, cmap=cmap_binary, annot=rna_pvals.values, fmt=".3f",
+                                    cbar=False, ax=ax_rna_pval, yticklabels=False)
+                    
                     # --- Protein heatmap ---
                     if not prot_matrix.empty:
                         sns.heatmap(
                             prot_matrix, cmap="viridis", ax=ax_prot,
                             cbar=False, vmin=-2, vmax=2, yticklabels=False
                         )
-                        ax_prot.set_title("Protein Expression", fontsize=12, pad=10)
-                        ax_prot.set_xlabel("Time", fontsize=10)
-                        ax_prot.set_ylabel("")  # remove ID label
-        
-                    # --- Protein p-values (binary coloring) ---
+                    
+                    # --- Protein p-values (gene names on right only) ---
                     if not prot_pvals.empty:
-                        cmap_binary = ListedColormap(["white", "purple"])
-                        prot_pvals_plot = prot_pvals.copy()
-                        if prot_pvals_plot.columns[0] != 'p-value':
-                            prot_pvals_plot.columns = ['p-value']
-                        mask_prot_df = (prot_pvals_plot < 0.05).astype(int)
-                        sns.heatmap(
-                            mask_prot_df, cmap=cmap_binary, annot=prot_pvals_plot.values, fmt=".3f",
-                            cbar=False, ax=ax_prot_pval, yticklabels=True
-                        )
-                        # Gene names on right side
+                        mask_prot = (prot_pvals.values < 0.05).astype(int)
+                        sns.heatmap(mask_prot, cmap=cmap_binary, annot=prot_pvals.values, fmt=".3f",
+                                    cbar=False, ax=ax_prot_pval, yticklabels=True)
                         ax_prot_pval.yaxis.tick_right()
                         ax_prot_pval.yaxis.set_label_position("right")
-                        ax_prot_pval.set_yticklabels(prot_pvals_plot.index, rotation=0, fontsize=10)
+                        ax_prot_pval.set_yticklabels(prot_pvals.index, rotation=0, fontsize=10)
         
                     # --- Fixed-height colorbars ---
                     if not rna_matrix.empty:
