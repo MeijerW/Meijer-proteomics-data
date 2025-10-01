@@ -556,7 +556,7 @@ with main_tab2:
         
         from mpl_toolkits.axes_grid1 import make_axes_locatable
         import matplotlib.colors as mcolors
-        
+            
         with subtab4:
             # st.markdown("### Multi-gene spatiotemporal heatmaps (Z-scored)")
         
@@ -694,7 +694,7 @@ with main_tab2:
             #             )
 
 
-        from mpl_toolkits.axes_grid1 import make_axes_locatable
+            
             st.markdown("### Multi-gene spatiotemporal heatmaps (Z-scored)")
         
             rna_dict, prot_dict = load_spatiotemporal_data()
