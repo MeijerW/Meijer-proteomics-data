@@ -554,114 +554,147 @@ with main_tab2:
                         key=f"download_spatiotemp_single_{gene_input}_{region_choice}"
                     )
         
-        # with subtab4:
-            # st.markdown("### Multi-gene Spatiotemporal Heatmaps")
-        
-            # rna_dict, prot_dict = load_spatiotemporal_data()
-        
-            # region_choice_multi = st.selectbox(
-            #     "Select region (multi)", ["Posterior", "Anterior", "Somite"],
-            #     index=0, key="st_spatio_multi_region"
-            # )
-        
-            # gene_input_multi = st.text_input(
-            #     "Enter genes (comma-separated):", value="", key="st_spatio_multi_genes"
-            # )
-        
-            # if gene_input_multi:
-            #     gene_list = [g.strip().lower() for g in gene_input_multi.split(",") if g.strip()]
-        
-            #     rna_matrix = prepare_heatmap_matrix(rna_dict, gene_list, region_choice_multi)
-            #     prot_matrix = prepare_heatmap_matrix(prot_dict, gene_list, region_choice_multi)
-            #     rna_pvals = prepare_pval_matrix(rna_dict, gene_list, region_choice_multi)
-            #     prot_pvals = prepare_pval_matrix(prot_dict, gene_list, region_choice_multi)
-        
-            #     if (rna_matrix.empty) and (prot_matrix.empty):
-            #         st.warning(f"No data found for the entered genes in {region_choice_multi}.")
-            #     else:
-            #         # Z-score normalization
-            #         if not rna_matrix.empty:
-            #             rna_matrix = zscore_matrix(rna_matrix)
-            #         if not prot_matrix.empty:
-            #             prot_matrix = zscore_matrix(prot_matrix)
-        
-            #         # Sort genes by RNA (timepoint 30) for consistent ordering
-            #         if not rna_matrix.empty:
-            #             rna_matrix = rna_matrix.sort_values(by="30", ascending=False)
-            #             new_index = rna_matrix.index.tolist()
-            #         else:
-            #             new_index = prot_matrix.index.tolist()
-        
-            #         # Reindex everything
-            #         prot_matrix = prot_matrix.reindex(new_index)
-            #         rna_pvals = rna_pvals.reindex(new_index)
-            #         prot_pvals = prot_pvals.reindex(new_index)
-        
-            #         # Create figure with subplots + colorbars
-            #         fig, ax = plt.subplots(
-            #             2, 4, figsize=(10, len(new_index) * 0.35),
-            #             gridspec_kw={"height_ratios": [1, 0.05], "width_ratios": [0.4, 0.1, 0.4, 0.1]},
-            #         )
-        
-            #         # --- RNA expression ---
-            #         f1 = sns.heatmap(rna_matrix, cmap="viridis", ax=ax[0, 0], cbar=False,
-            #                          yticklabels=False, vmin=-2, vmax=2)
-            #         f1.set_title("RNA", fontsize=10)
-        
-            #         # --- RNA p-values ---
-            #         f2 = sns.heatmap(rna_pvals, cmap="RdPu_r", ax=ax[0, 1], cbar=False,
-            #                          yticklabels=False, annot=True, fmt=".3f",
-            #                          annot_kws={"size": 7})
-            #         f2.set_title("p-value", fontsize=10)
-            #         ax[0, 1].set_ylabel("")
-        
-            #         # --- Protein expression ---
-            #         f3 = sns.heatmap(prot_matrix, cmap="viridis", ax=ax[0, 2], cbar=False,
-            #                          yticklabels=False, vmin=-2, vmax=2)
-            #         f3.set_title("Protein", fontsize=10)
-        
-            #         # --- Protein p-values (with gene labels on right) ---
-            #         f4 = sns.heatmap(prot_pvals, cmap="RdPu_r", ax=ax[0, 3], cbar=False,
-            #                          yticklabels=True, annot=True, fmt=".3f",
-            #                          annot_kws={"size": 7})
-            #         f4.set_title("p-value", fontsize=10)
-            #         ax[0, 3].yaxis.tick_right()
-            #         ax[0, 3].set_yticklabels(prot_pvals.index, rotation=0, fontsize=7)
-            #         ax[0, 3].set_ylabel("")
-        
-            #         # --- Colorbars ---
-            #         cbar1 = fig.colorbar(f1.collections[0], cax=ax[1, 0], orientation="horizontal", label="Z-score")
-            #         cbar2 = fig.colorbar(f2.collections[0], cax=ax[1, 1], orientation="horizontal", label="p-value")
-            #         cbar3 = fig.colorbar(f3.collections[0], cax=ax[1, 2], orientation="horizontal", label="Z-score")
-            #         cbar4 = fig.colorbar(f4.collections[0], cax=ax[1, 3], orientation="horizontal", label="p-value")
-        
-            #         # Remove outlines
-            #         for cb in [cbar1, cbar2, cbar3, cbar4]:
-            #             cb.outline.set_visible(False)
-        
-            #         fig.suptitle(f"{region_choice_multi} Spatiotemporal Heatmaps", y=1.12, fontsize=14, fontweight="bold")
-            #         plt.tight_layout()
-        
-            #         # Show in Streamlit
-            #         st.pyplot(fig)
-        
-            #         # Download button
-            #         buf = io.BytesIO()
-            #         fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
-            #         buf.seek(0)
-            #         st.download_button(
-            #             label="📥 Download Heatmap as PNG (multi)",
-            #             data=buf,
-            #             file_name=f"{region_choice_multi}_spatiotemporal_heatmap.png",
-            #             mime="image/png",
-            #             key=f"download_spatiotemp_heatmap_{region_choice_multi}"
-            #         )
-
-
         from mpl_toolkits.axes_grid1 import make_axes_locatable
         import matplotlib.colors as mcolors
         
         with subtab4:
+            # st.markdown("### Multi-gene spatiotemporal heatmaps (Z-scored)")
+        
+            # rna_dict, prot_dict = load_spatiotemporal_data()
+        
+            # gene_input = st.text_area("Enter gene names (comma-separated):", key="st_spatio_multi_gene")
+            # region_choice = st.selectbox(
+            #     "Select region (multi)", ["Posterior", "Anterior", "Somite"],
+            #     index=0, key="st_spatio_multi_region"
+            # )
+        
+            # if gene_input:
+            #     gene_list = [g.strip().lower() for g in gene_input.split(",") if g.strip()]
+            #     if not gene_list:
+            #         st.warning("Please enter at least one gene.")
+            #     else:
+            #         # --- Matrices
+            #         rna_matrix = prepare_heatmap_matrix(rna_dict, gene_list, region_choice)
+            #         prot_matrix = prepare_heatmap_matrix(prot_dict, gene_list, region_choice)
+            #         rna_pvals = prepare_pval_matrix(rna_dict, gene_list, region_choice)
+            #         prot_pvals = prepare_pval_matrix(prot_dict, gene_list, region_choice)
+        
+            #         if rna_matrix.empty and prot_matrix.empty:
+            #             st.warning(f"No data found for {region_choice} in the given gene list.")
+            #         else:
+            #             # --- Ensure same gene order across RNA & Protein
+            #             genes_order = list(set(rna_matrix.index).union(set(prot_matrix.index)))
+            #             genes_order = [g for g in gene_list if g in genes_order]  # keep input order
+        
+            #             rna_matrix = rna_matrix.reindex(genes_order)
+            #             prot_matrix = prot_matrix.reindex(genes_order)
+            #             rna_pvals = rna_pvals.reindex(genes_order)
+            #             prot_pvals = prot_pvals.reindex(genes_order)
+        
+            #             # z-score
+            #             if not rna_matrix.empty:
+            #                 rna_matrix = zscore_matrix(rna_matrix)
+            #             if not prot_matrix.empty:
+            #                 prot_matrix = zscore_matrix(prot_matrix)
+        
+            #             fig, axes = plt.subplots(
+            #                 1, 4,
+            #                 figsize=(16, max(3, len(genes_order) * 0.4)),
+            #                 gridspec_kw={"width_ratios": [3, 1, 3, 1]}
+            #             )
+        
+            #             # --- RNA expression ---
+            #             if not rna_matrix.empty:
+            #                 im_rna = sns.heatmap(
+            #                     rna_matrix, cmap="viridis", ax=axes[0],
+            #                     center=0, vmin=-2, vmax=2,
+            #                     cbar=False, yticklabels=True
+            #                 )
+            #                 axes[0].set_title("RNA Expression (z-score)")
+            #                 axes[0].set_xlabel("Time (min)")
+            #                 axes[0].set_ylabel("Genes")
+            #             else:
+            #                 axes[0].axis("off")
+            #                 axes[0].set_title("No RNA data")
+        
+            #             # --- RNA p-values ---
+            #             if not rna_pvals.empty:
+            #                 im_rna_p = sns.heatmap(
+            #                     rna_pvals, cmap="RdPu_r", annot=True, fmt=".3f",
+            #                     cbar=False, ax=axes[1], yticklabels=False
+            #                 )
+            #                 axes[1].set_title("RNA p-values")
+            #                 axes[1].set_ylabel("")
+            #             else:
+            #                 axes[1].axis("off")
+            #                 axes[1].set_title("No RNA p-values")
+        
+            #             # --- Protein expression ---
+            #             if not prot_matrix.empty:
+            #                 im_prot = sns.heatmap(
+            #                     prot_matrix, cmap="viridis", ax=axes[2],
+            #                     center=0, vmin=-2, vmax=2,
+            #                     cbar=False, yticklabels=False
+            #                 )
+            #                 axes[2].set_title("Protein Expression (z-score)")
+            #                 axes[2].set_xlabel("Time (min)")
+            #                 axes[2].set_ylabel("")
+            #             else:
+            #                 axes[2].axis("off")
+            #                 axes[2].set_title("No Protein data")
+        
+            #             # --- Protein p-values ---
+            #             if not prot_pvals.empty:
+            #                 im_prot_p = sns.heatmap(
+            #                     prot_pvals, cmap="RdPu_r", annot=True, fmt=".3f",
+            #                     cbar=False, ax=axes[3], yticklabels=False
+            #                 )
+            #                 axes[3].set_title("Protein p-values")
+            #                 axes[3].set_ylabel("")
+            #             else:
+            #                 axes[3].axis("off")
+            #                 axes[3].set_title("No Protein p-values")
+        
+            #             # --- Add colorbars below RNA/Prot expression and p-values
+            #             fig.subplots_adjust(bottom=0.20, wspace=0.3)
+        
+            #             # expression cbars
+            #             cbar_ax1 = fig.add_axes([0.10, 0.12, 0.35, 0.03])
+            #             cbar_ax2 = fig.add_axes([0.55, 0.12, 0.35, 0.03])
+            #             if not rna_matrix.empty:
+            #                 fig.colorbar(im_rna.collections[0], cax=cbar_ax1,
+            #                              orientation="horizontal", label="Z-score (RNA)")
+            #             if not prot_matrix.empty:
+            #                 fig.colorbar(im_prot.collections[0], cax=cbar_ax2,
+            #                              orientation="horizontal", label="Z-score (Protein)")
+        
+            #             # p-value cbars
+            #             cbar_ax3 = fig.add_axes([0.10, 0.05, 0.35, 0.03])
+            #             cbar_ax4 = fig.add_axes([0.55, 0.05, 0.35, 0.03])
+            #             if not rna_pvals.empty:
+            #                 fig.colorbar(im_rna_p.collections[0], cax=cbar_ax3,
+            #                              orientation="horizontal", label="p-value (RNA)")
+            #             if not prot_pvals.empty:
+            #                 fig.colorbar(im_prot_p.collections[0], cax=cbar_ax4,
+            #                              orientation="horizontal", label="p-value (Protein)")
+        
+            #             fig.suptitle(f"{region_choice} Spatiotemporal Heatmaps", fontsize=18, fontweight="bold", y=0.99)
+            #             st.pyplot(fig)
+        
+            #             # --- download
+            #             buf = io.BytesIO()
+            #             fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
+            #             buf.seek(0)
+            #             st.download_button(
+            #                 label="📥 Download this figure as PNG (multi)",
+            #                 data=buf,
+            #                 file_name=f"{region_choice}_spatiotemporal_heatmaps.png",
+            #                 mime="image/png",
+            #                 key=f"download_spatiotemp_multi_{region_choice}"
+            #             )
+
+
+        from mpl_toolkits.axes_grid1 import make_axes_locatable
             st.markdown("### Multi-gene spatiotemporal heatmaps (Z-scored)")
         
             rna_dict, prot_dict = load_spatiotemporal_data()
@@ -717,6 +750,11 @@ with main_tab2:
                             axes[0].set_title("RNA Expression (z-score)")
                             axes[0].set_xlabel("Time (min)")
                             axes[0].set_ylabel("Genes")
+        
+                            # attach colorbar of same width below
+                            divider = make_axes_locatable(axes[0])
+                            cax = divider.append_axes("bottom", size="5%", pad=0.4)
+                            fig.colorbar(im_rna.collections[0], cax=cax, orientation="horizontal", label="Z-score (RNA)")
                         else:
                             axes[0].axis("off")
                             axes[0].set_title("No RNA data")
@@ -724,11 +762,15 @@ with main_tab2:
                         # --- RNA p-values ---
                         if not rna_pvals.empty:
                             im_rna_p = sns.heatmap(
-                                rna_pvals, cmap="RdPu_r", annot=True, fmt=".3f",
+                                rna_pvals, cmap="Purples_r", annot=True, fmt=".3f",
                                 cbar=False, ax=axes[1], yticklabels=False
                             )
                             axes[1].set_title("RNA p-values")
                             axes[1].set_ylabel("")
+        
+                            divider = make_axes_locatable(axes[1])
+                            cax = divider.append_axes("bottom", size="5%", pad=0.4)
+                            fig.colorbar(im_rna_p.collections[0], cax=cax, orientation="horizontal", label="p-value (RNA)")
                         else:
                             axes[1].axis("off")
                             axes[1].set_title("No RNA p-values")
@@ -743,6 +785,10 @@ with main_tab2:
                             axes[2].set_title("Protein Expression (z-score)")
                             axes[2].set_xlabel("Time (min)")
                             axes[2].set_ylabel("")
+        
+                            divider = make_axes_locatable(axes[2])
+                            cax = divider.append_axes("bottom", size="5%", pad=0.4)
+                            fig.colorbar(im_prot.collections[0], cax=cax, orientation="horizontal", label="Z-score (Protein)")
                         else:
                             axes[2].axis("off")
                             axes[2].set_title("No Protein data")
@@ -750,39 +796,21 @@ with main_tab2:
                         # --- Protein p-values ---
                         if not prot_pvals.empty:
                             im_prot_p = sns.heatmap(
-                                prot_pvals, cmap="RdPu_r", annot=True, fmt=".3f",
+                                prot_pvals, cmap="Purples_r", annot=True, fmt=".3f",
                                 cbar=False, ax=axes[3], yticklabels=False
                             )
                             axes[3].set_title("Protein p-values")
                             axes[3].set_ylabel("")
+        
+                            divider = make_axes_locatable(axes[3])
+                            cax = divider.append_axes("bottom", size="5%", pad=0.4)
+                            fig.colorbar(im_prot_p.collections[0], cax=cax, orientation="horizontal", label="p-value (Protein)")
                         else:
                             axes[3].axis("off")
                             axes[3].set_title("No Protein p-values")
         
-                        # --- Add colorbars below RNA/Prot expression and p-values
-                        fig.subplots_adjust(bottom=0.20, wspace=0.3)
-        
-                        # expression cbars
-                        cbar_ax1 = fig.add_axes([0.10, 0.12, 0.35, 0.03])
-                        cbar_ax2 = fig.add_axes([0.55, 0.12, 0.35, 0.03])
-                        if not rna_matrix.empty:
-                            fig.colorbar(im_rna.collections[0], cax=cbar_ax1,
-                                         orientation="horizontal", label="Z-score (RNA)")
-                        if not prot_matrix.empty:
-                            fig.colorbar(im_prot.collections[0], cax=cbar_ax2,
-                                         orientation="horizontal", label="Z-score (Protein)")
-        
-                        # p-value cbars
-                        cbar_ax3 = fig.add_axes([0.10, 0.05, 0.35, 0.03])
-                        cbar_ax4 = fig.add_axes([0.55, 0.05, 0.35, 0.03])
-                        if not rna_pvals.empty:
-                            fig.colorbar(im_rna_p.collections[0], cax=cbar_ax3,
-                                         orientation="horizontal", label="p-value (RNA)")
-                        if not prot_pvals.empty:
-                            fig.colorbar(im_prot_p.collections[0], cax=cbar_ax4,
-                                         orientation="horizontal", label="p-value (Protein)")
-        
-                        fig.suptitle(f"{region_choice} Spatiotemporal Heatmaps", fontsize=18, fontweight="bold", y=1.02)
+                        fig.suptitle(f"{region_choice} Spatiotemporal Heatmaps", fontsize=18, fontweight="bold")
+                        fig.tight_layout(rect=[0, 0.08, 1, 0.95])
                         st.pyplot(fig)
         
                         # --- download
@@ -797,4 +825,4 @@ with main_tab2:
                             key=f"download_spatiotemp_multi_{region_choice}"
                         )
         
-
+        
