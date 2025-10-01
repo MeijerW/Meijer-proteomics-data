@@ -277,23 +277,22 @@ def plot_heatmaps(rna_matrix, prot_matrix, rna_pvals, prot_pvals, region, gene_l
 
 def add_fixed_cbar(fig, ax, im, label, height=0.08):
     """
-    Add a horizontal colorbar below ax with fixed height in inches.
+    Add a horizontal colorbar below ax, stretched to full figure width.
+    Height is fixed in inches.
     """
     fig_w, fig_h = fig.get_size_inches()
-    height_rel = height / fig_h  # convert inches to relative figure coords
-
-    bbox = ax.get_position()  # axis position in figure coords
+    height_rel = height / fig_h  # relative height
+    
+    # place cbar across full width of figure, aligned below ax
+    bbox = ax.get_position()
     cax = fig.add_axes([
-        bbox.x0,                 # same left as heatmap
-        bbox.y0 - height_rel-0.01,  # slightly below
-        bbox.width,              # same width
-        height_rel               # fixed height
+        0.1,                    # left margin (10% of figure)
+        bbox.y0 - height_rel-0.02,  # below current axis
+        0.8,                    # span 80% of figure width
+        height_rel              # fixed height
     ])
     cbar = fig.colorbar(im, cax=cax, orientation="horizontal", label=label)
     return cbar
-
-
-
 
 
 
