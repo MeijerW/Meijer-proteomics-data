@@ -275,25 +275,31 @@ def plot_heatmaps(rna_matrix, prot_matrix, rna_pvals, prot_pvals, region, gene_l
     return fig
 
 
-def add_fixed_cbar(fig, ax, im, label, height=0.08):
+def add_cbar_row(fig, ims, labels, height=0.03, pad=0.05):
     """
-    Add a horizontal colorbar below ax, stretched to full figure width.
-    Height is fixed in inches.
+    Add a row of horizontal colorbars beneath the figure, one for each heatmap.
+    - fig: the matplotlib figure
+    - ims: list of mappable objects (e.g. im from sns.heatmap)
+    - labels: list of labels for the colorbars
+    - height: relative height of each cbar (fraction of figure height)
+    - pad: vertical padding between heatmaps and cbar row
     """
+    n = len(ims)
     fig_w, fig_h = fig.get_size_inches()
-    height_rel = height / fig_h  # relative height
-    
-    # place cbar across full width of figure, aligned below ax
-    bbox = ax.get_position()
-    cax = fig.add_axes([
-        0.1,                    # left margin (10% of figure)
-        bbox.y0 - height_rel-0.02,  # below current axis
-        0.8,                    # span 80% of figure width
-        height_rel              # fixed height
-    ])
-    cbar = fig.colorbar(im, cax=cax, orientation="horizontal", label=label)
-    return cbar
 
+    # get bottom of heatmaps
+    bbox = ims[0].axes.get_position()
+    y_bottom = bbox.y0
+
+    # create equally spaced cax slots under each heatmap
+    for i, (im, label) in enumerate(zip(ims, labels)):
+        ax = im.axes
+        bbox = ax.get_position()
+        x0, x1 = bbox.x0, bbox.x1
+        cax = fig.add_axes([x0, y_bottom - pad - height, x1 - x0, height])
+        cbar = fig.colorbar(im, cax=cax, orientation="horizontal")
+        cbar.set_label(label)
+        cbar.outline.set_visible(False)
 
 
 # Top-level tabs
@@ -770,8 +776,7 @@ with main_tab2:
                             axes[0].set_title("RNA Expression (z-score)")
                             axes[0].set_xlabel("Time (min)")
                             axes[0].set_ylabel("Genes")
-        
-                            add_fixed_cbar(fig, axes[0], im_rna.collections[0], label="Z-score (RNA)")
+    
                         else:
                             axes[0].axis("off")
                             axes[0].set_title("No RNA data")
@@ -785,7 +790,7 @@ with main_tab2:
                             axes[1].set_title("RNA p-values")
                             axes[1].set_ylabel("")
         
-                            add_fixed_cbar(fig, axes[1], im_rna_p.collections[0], label="p-value (RNA)")
+                            
                         else:
                             axes[1].axis("off")
                             axes[1].set_title("No RNA p-values")
@@ -801,7 +806,7 @@ with main_tab2:
                             axes[2].set_xlabel("Time (min)")
                             axes[2].set_ylabel("")
         
-                            add_fixed_cbar(fig, axes[2], im_prot.collections[0], label="Z-score (Protein)")
+                           
                         else:
                             axes[2].axis("off")
                             axes[2].set_title("No Protein data")
@@ -815,11 +820,19 @@ with main_tab2:
                             axes[3].set_title("Protein p-values")
                             axes[3].set_ylabel("")
         
-                            add_fixed_cbar(fig, axes[3], im_prot_p.collections[0], label="p-value (Protein)")
+                            
                         else:
                             axes[3].axis("off")
                             axes[3].set_title("No Protein p-values")
-        
+
+                        add_cbar_row(
+                            fig,
+                            ims=[im_rna.collections[0], im_rna_pval.collections[0], im_prot.collections[0], im_prot_pval.collections[0]],
+                            labels=["RNA Z-score", "RNA p-value", "Protein Z-score", "Protein p-value"],
+                            height=0.03,   # thickness
+                            pad=0.05       # gap below heatmaps
+                        )
+                                
                         fig.suptitle(f"{region_choice} Spatiotemporal Heatmaps", fontsize=18, fontweight="bold")
                         fig.tight_layout(rect=[0, 0.12, 1, 0.95])
                         st.pyplot(fig)
