@@ -275,6 +275,28 @@ def plot_heatmaps(rna_matrix, prot_matrix, rna_pvals, prot_pvals, region, gene_l
     return fig
 
 
+def add_fixed_cbar(fig, ax, im, label, height=0.08):
+    """
+    Add a horizontal colorbar below ax with fixed height in inches.
+    """
+    fig_w, fig_h = fig.get_size_inches()
+    height_rel = height / fig_h  # convert inches to relative figure coords
+
+    bbox = ax.get_position()  # axis position in figure coords
+    cax = fig.add_axes([
+        bbox.x0,                 # same left as heatmap
+        bbox.y0 - height_rel-0.01,  # slightly below
+        bbox.width,              # same width
+        height_rel               # fixed height
+    ])
+    cbar = fig.colorbar(im, cax=cax, orientation="horizontal", label=label)
+    return cbar
+
+
+
+
+
+
 # Top-level tabs
 main_tab1, main_tab2 = st.tabs(["Spatial Viewer", "Spatiotemporal Viewer"])
 
@@ -693,8 +715,7 @@ with main_tab2:
             #                 key=f"download_spatiotemp_multi_{region_choice}"
             #             )
 
-
-            
+        
             st.markdown("### Multi-gene spatiotemporal heatmaps (Z-scored)")
         
             rna_dict, prot_dict = load_spatiotemporal_data()
@@ -751,10 +772,7 @@ with main_tab2:
                             axes[0].set_xlabel("Time (min)")
                             axes[0].set_ylabel("Genes")
         
-                            # attach colorbar of same width below
-                            divider = make_axes_locatable(axes[0])
-                            cax = divider.append_axes("bottom", size="5%", pad=0.4)
-                            fig.colorbar(im_rna.collections[0], cax=cax, orientation="horizontal", label="Z-score (RNA)")
+                            add_fixed_cbar(fig, axes[0], im_rna.collections[0], label="Z-score (RNA)")
                         else:
                             axes[0].axis("off")
                             axes[0].set_title("No RNA data")
@@ -762,15 +780,13 @@ with main_tab2:
                         # --- RNA p-values ---
                         if not rna_pvals.empty:
                             im_rna_p = sns.heatmap(
-                                rna_pvals, cmap="Purples_r", annot=True, fmt=".3f",
+                                rna_pvals, cmap="RdPu_r", annot=True, fmt=".3f",
                                 cbar=False, ax=axes[1], yticklabels=False
                             )
                             axes[1].set_title("RNA p-values")
                             axes[1].set_ylabel("")
         
-                            divider = make_axes_locatable(axes[1])
-                            cax = divider.append_axes("bottom", size="5%", pad=0.4)
-                            fig.colorbar(im_rna_p.collections[0], cax=cax, orientation="horizontal", label="p-value (RNA)")
+                            add_fixed_cbar(fig, axes[1], im_rna_p.collections[0], label="p-value (RNA)")
                         else:
                             axes[1].axis("off")
                             axes[1].set_title("No RNA p-values")
@@ -786,9 +802,7 @@ with main_tab2:
                             axes[2].set_xlabel("Time (min)")
                             axes[2].set_ylabel("")
         
-                            divider = make_axes_locatable(axes[2])
-                            cax = divider.append_axes("bottom", size="5%", pad=0.4)
-                            fig.colorbar(im_prot.collections[0], cax=cax, orientation="horizontal", label="Z-score (Protein)")
+                            add_fixed_cbar(fig, axes[2], im_prot.collections[0], label="Z-score (Protein)")
                         else:
                             axes[2].axis("off")
                             axes[2].set_title("No Protein data")
@@ -796,21 +810,19 @@ with main_tab2:
                         # --- Protein p-values ---
                         if not prot_pvals.empty:
                             im_prot_p = sns.heatmap(
-                                prot_pvals, cmap="Purples_r", annot=True, fmt=".3f",
+                                prot_pvals, cmap="RdPu_r", annot=True, fmt=".3f",
                                 cbar=False, ax=axes[3], yticklabels=False
                             )
                             axes[3].set_title("Protein p-values")
                             axes[3].set_ylabel("")
         
-                            divider = make_axes_locatable(axes[3])
-                            cax = divider.append_axes("bottom", size="5%", pad=0.4)
-                            fig.colorbar(im_prot_p.collections[0], cax=cax, orientation="horizontal", label="p-value (Protein)")
+                            add_fixed_cbar(fig, axes[3], im_prot_p.collections[0], label="p-value (Protein)")
                         else:
                             axes[3].axis("off")
                             axes[3].set_title("No Protein p-values")
         
                         fig.suptitle(f"{region_choice} Spatiotemporal Heatmaps", fontsize=18, fontweight="bold")
-                        fig.tight_layout(rect=[0, 0.08, 1, 0.95])
+                        fig.tight_layout(rect=[0, 0.12, 1, 0.95])
                         st.pyplot(fig)
         
                         # --- download
@@ -824,5 +836,5 @@ with main_tab2:
                             mime="image/png",
                             key=f"download_spatiotemp_multi_{region_choice}"
                         )
-        
-        
+                
+                
