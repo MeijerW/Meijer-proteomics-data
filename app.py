@@ -508,53 +508,52 @@ with main_tab2:
         #             key=f"download_spatiotemp_single_{gene_input}_{region_choice}"
         #         )
 
-
-        st.markdown("### Single gene dynamic expression (Z-scored)")
-        # load dicts once
-        rna_dict, prot_dict = load_spatiotemporal_data()
-    
-        # Unique keys for widgets
-        gene_input = st.text_input("Enter gene name (single):", value="", key="st_spatio_single_gene")
-        region_choice = st.selectbox(
-            "Select region (single)", ["Posterior", "Anterior", "Somite"],
-            index=0, key="st_spatio_single_region"
-        )
-    
-        if gene_input:
-            # prepare long format for the selected region only
-            rna_long = prepare_long_df({region_choice: rna_dict[region_choice]}, gene_input, "RNA")
-            prot_long = prepare_long_df({region_choice: prot_dict[region_choice]}, gene_input, "Protein")
-            combined_df = pd.concat([rna_long, prot_long], ignore_index=True)
-    
-            if combined_df.empty:
-                st.warning(f"Gene '{gene_input}' not found in {region_choice} datasets.")
-            else:
-                # --- Z-score normalization within each data type (RNA / Protein) ---
-                combined_df["Zscore"] = combined_df.groupby("DataType")["Value"].transform(
-                    lambda x: (x - x.mean()) / x.std(ddof=0) if x.std(ddof=0) else 0
-                )
-    
-                # Replace Value with Zscore for plotting
-                combined_df["Value"] = combined_df["Zscore"]
-    
-                # Plot
-                fig = plot_expression_grid(combined_df, gene_input, region_choice)
-                st.pyplot(fig)
-    
-                # unique download key and filename
-                buf = io.BytesIO()
-                fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
-                buf.seek(0)
-                st.download_button(
-                    label="📥 Download this figure as PNG (single, Z-scored)",
-                    data=buf,
-                    file_name=f"{gene_input}_{region_choice}_spatiotemporal_expression_Zscore.png",
-                    mime="image/png",
-                    key=f"download_spatiotemp_single_{gene_input}_{region_choice}"
-                )
-
-
-    
+        with subtab3:
+            st.markdown("### Single gene dynamic expression (Z-scored)")
+            # load dicts once
+            rna_dict, prot_dict = load_spatiotemporal_data()
+        
+            # Unique keys for widgets
+            gene_input = st.text_input("Enter gene name (single):", value="", key="st_spatio_single_gene")
+            region_choice = st.selectbox(
+                "Select region (single)", ["Posterior", "Anterior", "Somite"],
+                index=0, key="st_spatio_single_region"
+            )
+        
+            if gene_input:
+                # prepare long format for the selected region only
+                rna_long = prepare_long_df({region_choice: rna_dict[region_choice]}, gene_input, "RNA")
+                prot_long = prepare_long_df({region_choice: prot_dict[region_choice]}, gene_input, "Protein")
+        
+                combined_df = pd.concat([rna_long, prot_long], ignore_index=True)
+        
+                if combined_df.empty:
+                    st.warning(f"Gene '{gene_input}' not found in {region_choice} datasets.")
+                else:
+                    # --- Z-score normalization within each Type (RNA / Protein) ---
+                    combined_df["Zscore"] = combined_df.groupby("Type")["Expression"].transform(
+                        lambda x: (x - x.mean()) / x.std(ddof=0) if x.std(ddof=0) else 0
+                    )
+        
+                    # Replace Expression with Zscore for plotting
+                    combined_df["Expression"] = combined_df["Zscore"]
+        
+                    # Plot
+                    fig = plot_expression_grid(combined_df, gene_input, region_choice)
+                    st.pyplot(fig)
+        
+                    # unique download key and filename
+                    buf = io.BytesIO()
+                    fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
+                    buf.seek(0)
+                    st.download_button(
+                        label="📥 Download this figure as PNG (single, Z-scored)",
+                        data=buf,
+                        file_name=f"{gene_input}_{region_choice}_spatiotemporal_expression_Zscore.png",
+                        mime="image/png",
+                        key=f"download_spatiotemp_single_{gene_input}_{region_choice}"
+                    )
+        
         with subtab4:
             st.markdown("### Multi-gene Spatiotemporal Heatmaps")
         
