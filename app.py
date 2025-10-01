@@ -724,7 +724,7 @@ with main_tab2:
                         # --- RNA p-values ---
                         if not rna_pvals.empty:
                             im_rna_p = sns.heatmap(
-                                rna_pvals, cmap="Purples_r", annot=True, fmt=".3f",
+                                rna_pvals, cmap="RdPu_r", annot=True, fmt=".3f",
                                 cbar=False, ax=axes[1], yticklabels=False
                             )
                             axes[1].set_title("RNA p-values")
@@ -750,7 +750,7 @@ with main_tab2:
                         # --- Protein p-values ---
                         if not prot_pvals.empty:
                             im_prot_p = sns.heatmap(
-                                prot_pvals, cmap="Purples_r", annot=True, fmt=".3f",
+                                prot_pvals, cmap="RdPu_r", annot=True, fmt=".3f",
                                 cbar=False, ax=axes[3], yticklabels=False
                             )
                             axes[3].set_title("Protein p-values")
@@ -782,7 +782,7 @@ with main_tab2:
                             fig.colorbar(im_prot_p.collections[0], cax=cbar_ax4,
                                          orientation="horizontal", label="p-value (Protein)")
         
-                        fig.suptitle(f"{region_choice} Spatiotemporal Heatmaps", fontsize=18, fontweight="bold")
+                        fig.suptitle(f"{region_choice} Spatiotemporal Heatmaps", fontsize=18, fontweight="bold", y=1.02)
                         st.pyplot(fig)
         
                         # --- download
