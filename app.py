@@ -720,6 +720,7 @@ with main_tab2:
             #                 key=f"download_spatiotemp_multi_{region_choice}"
             #             )
         
+        
             st.markdown("### Multi-gene Spatiotemporal Expression")
         
             rna_dict, prot_dict = load_spatiotemporal_data()
@@ -760,11 +761,7 @@ with main_tab2:
                     # --- Helper function for fixed-height colorbars ---
                     def add_cbar_row(fig, axes, cmaps, norms, height=0.03, pad=0.02, labels=None):
                         """Add a row of colorbars beneath the given axes."""
-                        n = len(axes)
-                        fig_width = fig.get_size_inches()[0]
-                        total_width = fig_width
                         for i, ax in enumerate(axes):
-                            # Get position of heatmap axis
                             pos = ax.get_position()
                             cax = fig.add_axes([pos.x0, pos.y0 - height - pad, pos.width, height])
                             sm = plt.cm.ScalarMappable(cmap=cmaps[i], norm=norms[i])
@@ -772,15 +769,17 @@ with main_tab2:
                             cbar = fig.colorbar(sm, cax=cax, orientation='horizontal')
                             if labels:
                                 cbar.set_label(labels[i])
-                            # remove outline for aesthetics
                             cbar.outline.set_visible(False)
         
-                    fig, axes = plt.subplots(
-                        1, 4,
-                        figsize=(16, max(3, len(gene_order) * 0.5)),
-                        gridspec_kw={"wspace": 0.05}
-                    )
-                    ax_rna, ax_rna_pval, ax_prot, ax_prot_pval = axes
+                    # --- Figure with width ratios: expression 2x, p-value 1x ---
+                    fig = plt.figure(figsize=(16, max(3, len(gene_order) * 0.5)))
+                    from matplotlib import gridspec
+                    gs = gridspec.GridSpec(1, 4, width_ratios=[2,1,2,1], wspace=0.05)
+        
+                    ax_rna = fig.add_subplot(gs[0])
+                    ax_rna_pval = fig.add_subplot(gs[1], sharey=ax_rna)
+                    ax_prot = fig.add_subplot(gs[2], sharey=ax_rna)
+                    ax_prot_pval = fig.add_subplot(gs[3], sharey=ax_rna)
         
                     # --- RNA expression ---
                     if not rna_matrix.empty:
@@ -816,6 +815,8 @@ with main_tab2:
                         ax_prot_pval.set_title("Protein p-values")
                         ax_prot_pval.yaxis.tick_right()
                         ax_prot_pval.yaxis.set_label_position("right")
+                        # Keep gene labels horizontal
+                        ax_prot_pval.set_yticklabels(ax_prot_pval.get_yticklabels(), rotation=0)
                     else:
                         ax_prot_pval.axis("off")
         
@@ -823,9 +824,9 @@ with main_tab2:
                     cmaps = ["viridis", "RdPu_r", "viridis", "RdPu_r"]
                     norms = [
                         plt.Normalize(vmin=-2, vmax=2),
-                        plt.Normalize(vmin=0, vmax=0.05),
+                        plt.Normalize(vmin=0, vmax=1),
                         plt.Normalize(vmin=-2, vmax=2),
-                        plt.Normalize(vmin=0, vmax=0.05)
+                        plt.Normalize(vmin=0, vmax=1)
                     ]
                     labels = ["Z-score (RNA)", "p-value (RNA)", "Z-score (Protein)", "p-value (Protein)"]
                     add_cbar_row(fig, [ax_rna, ax_rna_pval, ax_prot, ax_prot_pval],
@@ -845,4 +846,5 @@ with main_tab2:
                         file_name=f"{region_choice_multi}_spatiotemporal_heatmap.png",
                         mime="image/png"
                     )
+
 
